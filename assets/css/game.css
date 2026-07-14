@@ -1,60 +1,126 @@
 /* ══ GAME DETAIL PAGE ══ */
 
-.game-page { padding: 24px 0; }
+/* ── 主布局: 左公告 + 中间游戏 + 右侧栏 ── */
+.game-master-layout {
+  display: grid;
+  grid-template-columns: 160px 1fr 300px;
+  gap: 16px;
+  align-items: start;
+  padding: 20px 0;
+}
 
+.game-center { min-width: 0; }
+
+/* ── 游戏标题条 ── */
+.game-title-bar { margin-bottom: 10px; }
+.game-title-bar h1 {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 16px rgba(255,230,0,.4);
+}
+.game-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.game-tag {
+  font-size: 10px; padding: 2px 9px;
+  border-radius: 4px; border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+/* ── 游戏画面容器 ── */
 .game-player-wrap {
   background: #000;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
   aspect-ratio: 16/9;
-  max-height: 600px;
+  max-height: 540px;
   position: relative;
 }
-.game-player-wrap iframe,
-.game-player-wrap canvas {
+.game-player-wrap iframe {
   width: 100%; height: 100%;
   display: block; border: none;
 }
+
+/* ── 全屏按钮 ── */
 .fullscreen-btn {
-  position: absolute; bottom: 10px; right: 10px;
-  background: rgba(0,0,0,.7);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background .2s;
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0,0,0,.65);
+  border: 1px solid rgba(255,255,255,.15);
+  color: var(--text2);
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer; font-size: 11px;
+  transition: background .2s, color .2s;
+  z-index: 10;
 }
 .fullscreen-btn:hover { background: var(--neon-cyan); color: #000; }
 
-.game-sidebar { display: flex; flex-direction: column; gap: 20px; }
-
-.game-detail-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 24px;
-  align-items: start;
+/* ══ AD ③: IN-GAME STICKY MINI BANNER ══
+   展示在游戏画面内部底部，半透明浮层
+   玩家可点按“−”收起
+*/
+.ad-ingame-sticky {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 20;
+  transition: height .25s, opacity .25s;
+  border-top: 1px solid rgba(255,255,255,.06);
 }
-
-.game-title-bar { margin: 20px 0 8px; }
-.game-title-bar h1 {
-  font-family: var(--font-pixel);
-  font-size: 18px;
-  color: var(--neon-yellow);
-  text-shadow: 0 0 16px rgba(255,230,0,.4);
+.ad-ingame-sticky.minimized {
+  height: 18px;
+  overflow: hidden;
+  opacity: .5;
 }
-.game-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.game-tag {
-  font-size: 10px;
-  padding: 3px 10px;
-  border-radius: 4px;
+.ad-ingame-label {
+  font-size: 9px;
+  color: rgba(255,255,255,.35);
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+.ad-ingame-content { flex: 1; text-align: center; }
+.ad-ingame-close {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.1);
+  border: none;
+  color: rgba(255,255,255,.5);
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.ad-ingame-close:hover { background: rgba(255,255,255,.25); color: #fff; }
+
+/* ══ AD ②: LEFT SKYSCRAPER ══ */
+.ad-skyscraper {
+  position: sticky;
+  top: 80px;
+  width: 160px;
+  min-height: 600px;
+  background: var(--bg2);
   border: 1px solid var(--border);
-  color: var(--text2);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+}
+.ad-placeholder.vertical {
+  text-align: center;
+  line-height: 2;
 }
 
-/* ── AD SIDEBAR ── */
+/* ══ AD ⑤⑥: RIGHT SIDEBAR ══ */
+.game-sidebar {
+  position: sticky;
+  top: 80px;
+  display: flex; flex-direction: column; gap: 16px;
+}
 .ad-sidebar {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -63,56 +129,105 @@
   display: flex; align-items: center; justify-content: center;
 }
 
-/* ── RELATED GAMES ── */
-.related-games {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px,1fr));
-  gap: 14px;
-  margin-top: 16px;
+/* ══ AD ⑦: BOTTOM STICKY BAR ══
+   页面最底部浮层，始终可见，玩家可关闭
+*/
+.ad-bottom-sticky {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: rgba(10,10,15,.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.5);
 }
+.ad-sticky-close {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.1);
+  border: none; color: var(--text2);
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.ad-sticky-close:hover { background: rgba(255,255,255,.25); color: #fff; }
 
-/* ── REWARDED AD MODAL ── */
+/* ══ REWARDED AD MODAL ══ */
 .rewarded-modal {
   display: none;
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,.85);
+  background: rgba(0,0,0,.88);
   align-items: center; justify-content: center;
 }
 .rewarded-modal.show { display: flex; }
 .rewarded-box {
   background: var(--bg2);
   border: 2px solid var(--neon-cyan);
-  border-radius: 16px;
-  padding: 40px;
+  border-radius: 18px;
+  padding: 44px 40px;
   text-align: center;
-  max-width: 360px;
-  box-shadow: 0 0 40px rgba(0,245,255,.3);
+  max-width: 380px; width: 90%;
+  box-shadow: 0 0 50px rgba(0,245,255,.25);
+  animation: popIn .2s ease;
 }
+@keyframes popIn {
+  from { transform: scale(.88); opacity:0; }
+  to   { transform: scale(1);   opacity:1; }
+}
+.rewarded-icon { font-size: 48px; margin-bottom: 12px; }
 .rewarded-box h2 {
   font-family: var(--font-pixel);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--neon-yellow);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-.rewarded-box p { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
-.rewarded-actions { display: flex; gap: 12px; justify-content: center; }
+.rewarded-box p { font-size: 13px; color: var(--text2); margin-bottom: 8px; line-height: 1.6; }
+.rewarded-timer { font-size: 11px; color: var(--text2); min-height: 18px; margin-bottom: 20px; }
+.rewarded-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .btn-watch {
-  padding: 10px 24px;
+  padding: 11px 26px;
   background: var(--neon-cyan); color: #000;
-  border: none; border-radius: 6px;
+  border: none; border-radius: 8px;
   font-family: var(--font-pixel); font-size: 10px;
   cursor: pointer;
-  box-shadow: 0 0 16px rgba(0,245,255,.4);
+  box-shadow: 0 0 20px rgba(0,245,255,.45);
+  transition: transform .15s;
 }
+.btn-watch:hover { transform: scale(1.04); }
 .btn-skip {
-  padding: 10px 18px;
+  padding: 11px 20px;
   background: transparent;
   border: 1px solid var(--border);
-  color: var(--text2); border-radius: 6px;
+  color: var(--text2); border-radius: 8px;
   font-size: 12px; cursor: pointer;
+  transition: border-color .2s;
+}
+.btn-skip:hover { border-color: var(--text2); }
+.btn-skip:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── 相关游戏 ── */
+.related-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+  gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 80px; /* 留出底部悬浮广告的空间 */
 }
 
-@media (max-width: 900px) {
-  .game-detail-layout { grid-template-columns: 1fr; }
+/* ── 响应式 ── */
+@media (max-width: 1100px) {
+  .game-master-layout {
+    grid-template-columns: 1fr 260px;
+  }
+  .ad-left { display: none; } /* 小屏隐藏左侧天横 */
+}
+@media (max-width: 768px) {
+  .game-master-layout {
+    grid-template-columns: 1fr;
+  }
+  .game-sidebar { display: none; } /* 移动端隐藏右栏 */
   .game-player-wrap { aspect-ratio: 4/3; }
 }
