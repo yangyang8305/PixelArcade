@@ -1,108 +1,168 @@
-/* ══ HOME PAGE SPECIFIC ══ */
+/* ══ HOME PAGE ══ */
 
 /* ── HERO ── */
 .hero {
   position: relative;
-  min-height: 420px;
+  min-height: 460px;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 0%, rgba(0,245,255,.12) 0%, transparent 70%),
-              radial-gradient(ellipse at 80% 80%, rgba(255,0,170,.08) 0%, transparent 60%),
-              var(--bg);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,245,255,.14) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 90% 80%, rgba(255,0,170,.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 90%, rgba(180,74,255,.07) 0%, transparent 60%),
+    var(--bg);
 }
+
+/* 动态网格 */
 .hero-bg-grid {
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(0,245,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,245,255,.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: gridScroll 20s linear infinite;
+    linear-gradient(rgba(0,245,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: gridScroll 24s linear infinite;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
 }
 @keyframes gridScroll {
   from { background-position: 0 0; }
-  to   { background-position: 40px 40px; }
+  to   { background-position: 44px 44px; }
 }
+
+/* 扫描线叠加 */
+.hero::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.04) 2px,
+    rgba(0,0,0,.04) 4px
+  );
+  pointer-events: none;
+}
+
 .hero-content {
   position: relative; z-index: 2;
-  text-align: center; padding: 40px 20px;
+  text-align: center; padding: 48px 24px;
 }
 .hero-title {
   font-family: var(--font-pixel);
-  font-size: 28px;
-  line-height: 1.6;
+  font-size: 30px;
+  line-height: 1.7;
   color: var(--text);
-  text-shadow: 0 0 30px rgba(0,245,255,.4);
-  margin-bottom: 16px;
+  text-shadow:
+    0 0 20px rgba(0,245,255,.3),
+    0 0 60px rgba(0,245,255,.1);
+  margin-bottom: 18px;
 }
-.hero-title span { color: var(--neon-cyan); }
+.hero-title span {
+  color: var(--neon-cyan);
+  text-shadow:
+    0 0 16px var(--neon-cyan),
+    0 0 40px rgba(0,245,255,.5),
+    0 0 80px rgba(0,245,255,.2);
+  display: inline-block;
+  animation: titlePulse 3s ease-in-out infinite;
+}
+@keyframes titlePulse {
+  0%,100% { text-shadow: 0 0 16px var(--neon-cyan), 0 0 40px rgba(0,245,255,.5); }
+  50%      { text-shadow: 0 0 24px var(--neon-cyan), 0 0 60px rgba(0,245,255,.8), 0 0 100px rgba(0,245,255,.3); }
+}
 .hero-sub {
-  font-size: 15px;
+  font-size: 15px; font-weight: 500;
   color: var(--text2);
-  margin-bottom: 32px;
-  letter-spacing: 1px;
+  margin-bottom: 36px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 12px;
 }
+
+/* 漂浮粒子 */
 .hero-floats { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .float-icon {
   position: absolute;
   left: var(--x); top: var(--y);
-  font-size: 28px;
-  opacity: .18;
-  animation: floatUp 6s ease-in-out var(--d) infinite alternate;
+  font-size: 26px;
+  opacity: .12;
+  animation: floatAnim 7s ease-in-out var(--d) infinite alternate;
+  filter: drop-shadow(0 0 6px rgba(0,245,255,.4));
 }
-@keyframes floatUp {
-  from { transform: translateY(0) rotate(-5deg); }
-  to   { transform: translateY(-18px) rotate(5deg); }
+@keyframes floatAnim {
+  0%   { transform: translateY(0) rotate(-8deg) scale(1); }
+  50%  { transform: translateY(-14px) rotate(3deg) scale(1.05); }
+  100% { transform: translateY(-24px) rotate(8deg) scale(.95); }
 }
 
 /* ── CATEGORY BAR ── */
 .category-bar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 0;
-  position: sticky; top: 60px; z-index: 90;
+  background: rgba(7,7,14,.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0,245,255,.08);
+  position: sticky; top: 62px; z-index: 90;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
 }
 .category-bar .container {
-  display: flex; gap: 4px;
+  display: flex; gap: 6px;
   overflow-x: auto;
-  padding: 10px 20px;
+  padding: 12px 24px;
   scrollbar-width: none;
 }
 .category-bar .container::-webkit-scrollbar { display: none; }
+
 .cat-tab {
   flex-shrink: 0;
-  padding: 7px 18px;
-  font-size: 12px; font-family: var(--font-pixel);
+  padding: 8px 20px;
+  font-size: 10px; font-family: var(--font-pixel);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   border-radius: 20px;
   color: var(--text2);
   cursor: pointer;
   transition: all .2s;
   white-space: nowrap;
+  letter-spacing: .5px;
 }
-.cat-tab:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+.cat-tab:hover {
+  color: var(--neon-cyan);
+  border-color: rgba(0,245,255,.4);
+  background: rgba(0,245,255,.05);
+}
 .cat-tab.active {
   background: var(--neon-cyan);
-  color: var(--bg);
+  color: #000; font-weight: 800;
   border-color: var(--neon-cyan);
-  box-shadow: 0 0 12px rgba(0,245,255,.4);
+  box-shadow:
+    0 0 14px rgba(0,245,255,.6),
+    0 0 28px rgba(0,245,255,.25);
 }
 
 /* ── GAME GRID ── */
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  animation: fadeIn .3s ease;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 22px;
 }
-@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.game-grid.entering .game-card {
+  animation: cardIn .3s ease both;
+}
+.game-card:nth-child(1)  { animation-delay: .02s; }
+.game-card:nth-child(2)  { animation-delay: .04s; }
+.game-card:nth-child(3)  { animation-delay: .06s; }
+.game-card:nth-child(4)  { animation-delay: .08s; }
+.game-card:nth-child(5)  { animation-delay: .10s; }
+.game-card:nth-child(6)  { animation-delay: .12s; }
+.game-card:nth-child(7)  { animation-delay: .14s; }
+.game-card:nth-child(8)  { animation-delay: .16s; }
+@keyframes cardIn {
+  from { opacity:0; transform:translateY(16px) scale(.97); }
+  to   { opacity:1; transform:none; }
+}
 
-/* ── EMPTY STATE ── */
 .empty-state {
   grid-column: 1/-1;
   text-align: center;
-  padding: 60px 0;
+  padding: 80px 0;
   color: var(--text2);
-  font-size: 14px;
 }
-.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-icon { font-size: 56px; margin-bottom: 14px; opacity: .5; }

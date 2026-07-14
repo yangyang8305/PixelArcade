@@ -1,51 +1,69 @@
-// ══════════════════════════════════════════
-// PixelArcade — Home Page Logic
-// ══════════════════════════════════════════
-
 (function() {
-  const GRID = document.getElementById('gameGrid');
-  const SEARCH = document.getElementById('searchInput');
+  const GRID     = document.getElementById('gameGrid');
+  const SEARCH   = document.getElementById('searchInput');
   const LOAD_BTN = document.getElementById('loadMoreBtn');
   const PAGE_SIZE = 12;
-  let currentCat = 'all';
+  let currentCat  = 'all';
   let currentPage = 1;
-  let filtered = [];
+  let filtered    = [];
+
+  // 每个分类对应渐变色（与 CSS 保持一致）
+  const CAT_COLORS = {
+    arcade:   ['#001a3a','#002855'],
+    puzzle:   ['#1a0040','#2a0060'],
+    casual:   ['#002010','#003020'],
+    action:   ['#2a0010','#400020'],
+    strategy: ['#1a1000','#2a2000'],
+  };
 
   function renderCard(g) {
     const badge = g.badge
       ? `<span class="game-badge badge-${g.badge}">${g.badge}</span>` : '';
-    const stars = '★'.repeat(Math.round(g.rating)) + '☆'.repeat(5 - Math.round(g.rating));
+    const filled  = Math.round(g.rating);
+    const stars   = '★'.repeat(filled) + '☆'.repeat(5 - filled);
+    const colors  = CAT_COLORS[g.category] || ['#0a0a1f','#111130'];
+
     return `
-    <div class="game-card" onclick="location.href='pages/game.html?id=${g.id}'">
-      <div class="game-thumb-placeholder">${g.emoji}</div>
+    <div class="game-card" data-cat="${g.category}"
+         onclick="location.href='pages/game.html?id=${g.id}'">
+      <div class="game-thumb-placeholder"
+           style="background:linear-gradient(135deg,#0a0a1f 0%,${colors[0]} 50%,${colors[1]} 100%)">
+        ${g.emoji}
+      </div>
       ${badge}
       <div class="game-info">
         <div class="game-name">${g.name}</div>
         <div class="game-meta">
           <span class="game-cat">${g.category}</span>
-          <span class="game-rating">${stars} ${g.rating}</span>
+          <span class="game-rating">${stars}</span>
         </div>
       </div>
     </div>`;
   }
 
   function filterGames() {
-    const q = (SEARCH ? SEARCH.value : '').toLowerCase().trim();
+    const q = SEARCH ? SEARCH.value.toLowerCase().trim() : '';
     filtered = GAMES.filter(g => {
       const catOk = currentCat === 'all' || g.category === currentCat;
-      const qOk = !q || g.name.toLowerCase().includes(q) || g.tags.some(t => t.includes(q));
+      const qOk   = !q || g.name.toLowerCase().includes(q)
+                       || g.tags.some(t => t.includes(q));
       return catOk && qOk;
     });
     currentPage = 1;
-    renderGrid();
+    renderGrid(true);
   }
 
-  function renderGrid() {
+  function renderGrid(animate) {
     const slice = filtered.slice(0, currentPage * PAGE_SIZE);
     if (!slice.length) {
       GRID.innerHTML = `<div class="empty-state"><div class="empty-icon">🕹️</div><p>No games found.</p></div>`;
     } else {
       GRID.innerHTML = slice.map(renderCard).join('');
+      if (animate) {
+        GRID.classList.remove('entering');
+        void GRID.offsetWidth; // reflow
+        GRID.classList.add('entering');
+      }
     }
     if (LOAD_BTN) {
       LOAD_BTN.style.display = filtered.length > currentPage * PAGE_SIZE ? '' : 'none';
@@ -62,20 +80,15 @@
     });
   });
 
-  // Search
-  if (SEARCH) {
-    SEARCH.addEventListener('input', filterGames);
-  }
+  if (SEARCH) SEARCH.addEventListener('input', filterGames);
 
-  // Load more
   if (LOAD_BTN) {
     LOAD_BTN.addEventListener('click', () => {
       currentPage++;
-      renderGrid();
+      renderGrid(false);
     });
   }
 
-  // Init
   filtered = GAMES.slice();
-  renderGrid();
+  renderGrid(true);
 })();
