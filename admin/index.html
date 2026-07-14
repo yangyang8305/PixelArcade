@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — PixelArcade</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="dark-theme">
+
+<nav class="navbar">
+  <a class="nav-logo" href="../index.html">
+    <span class="pixel-icon">🕹️</span>
+    <span class="logo-text">Pixel<em>Arcade</em></span>
+  </a>
+  <div class="nav-right">
+    <span style="font-size:12px;color:var(--neon-pink);font-family:var(--font-pixel)">ADMIN</span>
+  </div>
+</nav>
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <h3>MENU</h3>
+    <a class="admin-nav-link active" href="index.html">📊 Dashboard</a>
+    <a class="admin-nav-link" href="games.html">🎮 Games</a>
+    <a class="admin-nav-link" href="ads.html">💰 Ad Slots</a>
+    <a class="admin-nav-link" href="add-game.html">➕ Add Game</a>
+    <a class="admin-nav-link" href="../index.html">🌐 View Site</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <h1 class="admin-title">📊 Dashboard</h1>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🎮</div>
+        <div class="stat-val" id="statGames">12</div>
+        <div class="stat-label">Total Games</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👁️</div>
+        <div class="stat-val">98.4K</div>
+        <div class="stat-label">Total Plays</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-val">6</div>
+        <div class="stat-label">Active Ad Slots</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-val">12</div>
+        <div class="stat-label">Languages</div>
+      </div>
+    </div>
+
+    <!-- Recent games table -->
+    <div class="section-header">
+      <h2 class="section-title">🎮 Recent Games</h2>
+      <a href="add-game.html" class="cta-btn" style="font-size:9px;padding:8px 20px">+ Add</a>
+    </div>
+    <table class="admin-table" id="gamesTable">
+      <thead>
+        <tr>
+          <th>Game</th><th>Category</th><th>Rating</th><th>Plays</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="gamesBody"></tbody>
+    </table>
+  </main>
+</div>
+
+<script src="../assets/js/games-data.js"></script>
+<script>
+document.getElementById('statGames').textContent = GAMES.length;
+const tbody = document.getElementById('gamesBody');
+tbody.innerHTML = GAMES.map(g => `
+  <tr>
+    <td>${g.emoji} ${g.name}</td>
+    <td><span class="game-cat">${g.category}</span></td>
+    <td style="color:var(--neon-yellow)">${g.rating} ★</td>
+    <td>${g.plays.toLocaleString()}</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn-sm btn-edit">Edit</button>
+      <button class="btn-sm btn-toggle">Toggle</button>
+      <button class="btn-sm btn-del">Del</button>
+    </td>
+  </tr>`).join('');
+</script>
+</body>
+</html>

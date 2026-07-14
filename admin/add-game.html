@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Add Game — PixelArcade Admin</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="dark-theme">
+
+<nav class="navbar">
+  <a class="nav-logo" href="../index.html">🕹️ <em>Pixel</em>Arcade</a>
+  <div class="nav-right">
+    <span style="font-size:12px;color:var(--neon-pink);font-family:var(--font-pixel)">ADMIN</span>
+  </div>
+</nav>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <h3>MENU</h3>
+    <a class="admin-nav-link" href="index.html">📊 Dashboard</a>
+    <a class="admin-nav-link" href="games.html">🎮 Games</a>
+    <a class="admin-nav-link" href="ads.html">💰 Ad Slots</a>
+    <a class="admin-nav-link active" href="add-game.html">➕ Add Game</a>
+    <a class="admin-nav-link" href="../index.html">🌐 View Site</a>
+  </aside>
+
+  <main class="admin-main">
+    <h1 class="admin-title">➕ Add New Game</h1>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:28px">Fill in the details then copy the generated entry into <code style="color:var(--neon-cyan)">assets/js/games-data.js</code>.</p>
+
+    <form class="admin-form" id="addGameForm">
+      <div class="form-group">
+        <label class="form-label">Game ID (no spaces)</label>
+        <input class="form-input" id="fId" placeholder="e.g. tetris" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Game Name</label>
+        <input class="form-input" id="fName" placeholder="e.g. Tetris" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="fCat">
+          <option>arcade</option><option>puzzle</option>
+          <option>casual</option><option>action</option><option>strategy</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji Icon</label>
+        <input class="form-input" id="fEmoji" placeholder="e.g. 🎯" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Game URL (relative or absolute)</label>
+        <input class="form-input" id="fUrl" placeholder="../games/tetris/index.html" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="fDesc" placeholder="Short game description..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input class="form-input" id="fTags" placeholder="arcade,classic,pixel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Badge</label>
+        <select class="form-select" id="fBadge">
+          <option value="">None</option>
+          <option value="new">NEW</option>
+          <option value="hot">HOT</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-primary">Generate Entry</button>
+    </form>
+
+    <div id="output" style="display:none;margin-top:32px">
+      <h2 class="section-title" style="margin-bottom:12px">📋 Copy this into games-data.js</h2>
+      <pre id="outputCode" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:20px;color:var(--neon-green);font-size:12px;overflow-x:auto;white-space:pre-wrap"></pre>
+      <button class="btn-primary" style="margin-top:12px" onclick="navigator.clipboard.writeText(document.getElementById('outputCode').textContent)">📋 Copy to Clipboard</button>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('addGameForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const id = document.getElementById('fId').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const cat = document.getElementById('fCat').value;
+  const emoji = document.getElementById('fEmoji').value.trim() || '🎮';
+  const url = document.getElementById('fUrl').value.trim();
+  const desc = document.getElementById('fDesc').value.trim();
+  const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const badge = document.getElementById('fBadge').value || null;
+
+  const entry = `  {
+    id: '${id}',
+    name: '${name}',
+    nameKey: 'game.${id}',
+    category: '${cat}',
+    emoji: '${emoji}',
+    rating: 4.0,
+    plays: 0,
+    badge: ${badge ? `'${badge}'` : 'null'},
+    url: '${url}',
+    desc: '${desc}',
+    descKey: 'game.${id}.desc',
+    tags: ${JSON.stringify(tags)}
+  },`;
+
+  document.getElementById('outputCode').textContent = entry;
+  document.getElementById('output').style.display = '';
+});
+</script>
+</body>
+</html>

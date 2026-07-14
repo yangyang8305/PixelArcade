@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ad Slots — PixelArcade Admin</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body class="dark-theme">
+
+<nav class="navbar">
+  <a class="nav-logo" href="../index.html">🕹️ <em>Pixel</em>Arcade</a>
+  <div class="nav-right">
+    <span style="font-size:12px;color:var(--neon-pink);font-family:var(--font-pixel)">ADMIN</span>
+  </div>
+</nav>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <h3>MENU</h3>
+    <a class="admin-nav-link" href="index.html">📊 Dashboard</a>
+    <a class="admin-nav-link" href="games.html">🎮 Games</a>
+    <a class="admin-nav-link active" href="ads.html">💰 Ad Slots</a>
+    <a class="admin-nav-link" href="add-game.html">➕ Add Game</a>
+    <a class="admin-nav-link" href="../index.html">🌐 View Site</a>
+  </aside>
+
+  <main class="admin-main">
+    <h1 class="admin-title">💰 Ad Slot Management</h1>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:28px">Paste your AdSense / ad network code into each slot. Toggle on/off without touching game code.</p>
+
+    <table class="admin-table">
+      <thead><tr><th>Slot Name</th><th>Location</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Top Banner</td><td>Homepage top</td><td>Banner 728×90</td>
+          <td><span style="color:var(--neon-green)">● Active</span></td>
+          <td><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label></td>
+        </tr>
+        <tr>
+          <td>Mid Banner</td><td>Homepage middle</td><td>Banner 728×90</td>
+          <td><span style="color:var(--neon-green)">● Active</span></td>
+          <td><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label></td>
+        </tr>
+        <tr>
+          <td>Game Sidebar L</td><td>Game page right</td><td>Rectangle 300×250</td>
+          <td><span style="color:var(--neon-green)">● Active</span></td>
+          <td><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label></td>
+        </tr>
+        <tr>
+          <td>Game Sidebar R</td><td>Game page right</td><td>Rectangle 300×250</td>
+          <td><span style="color:var(--neon-green)">● Active</span></td>
+          <td><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label></td>
+        </tr>
+        <tr>
+          <td>Below Player</td><td>Game page center</td><td>Banner 728×90</td>
+          <td><span style="color:var(--neon-green)">● Active</span></td>
+          <td><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label></td>
+        </tr>
+        <tr>
+          <td>Rewarded Video</td><td>Game over modal</td><td>Rewarded Video</td>
+          <td><span style="color:var(--neon-yellow)">● Pending</span></td>
+          <td><label class="toggle-switch"><input type="checkbox"><div class="toggle-track"></div></label></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:32px">
+      <h2 class="section-title" style="margin-bottom:16px">📋 AdSense Code Template</h2>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:20px">
+        <p style="color:var(--text2);font-size:12px;margin-bottom:12px">Replace <code style="color:var(--neon-cyan)">ca-pub-XXXXXXXX</code> and <code style="color:var(--neon-cyan)">data-ad-slot</code> with your own values:</p>
+        <pre style="color:var(--neon-green);font-size:11px;overflow-x:auto">&lt;script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXX" crossorigin="anonymous"&gt;&lt;/script&gt;
+&lt;ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-XXXXXXXX"
+     data-ad-slot="XXXXXXXXXX"
+     data-ad-format="auto"
+     data-full-width-responsive="true"&gt;&lt;/ins&gt;
+&lt;script&gt;(adsbygoogle = window.adsbygoogle || []).push({});&lt;/script&gt;</pre>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

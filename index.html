@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="PixelArcade - Free online pixel-art casual games. Play instantly, no download needed.">
+<title>PixelArcade 🕹️ Free Online Games</title>
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/home.css">
+</head>
+<body class="dark-theme">
+
+<!-- ══ NAV ══ -->
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">
+    <span class="pixel-icon">🕹️</span>
+    <span class="logo-text">Pixel<em>Arcade</em></span>
+  </a>
+  <div class="nav-center">
+    <input class="search-box" id="searchInput" type="text" placeholder="🔍 Search games..." autocomplete="off">
+  </div>
+  <div class="nav-right">
+    <a class="nav-link" href="index.html" data-i18n="nav.home">Home</a>
+    <a class="nav-link" href="pages/category.html" data-i18n="nav.categories">Categories</a>
+    <div class="lang-switcher" id="langSwitcher">
+      <button class="lang-btn" id="langBtn">🌐 EN ▾</button>
+      <div class="lang-dropdown" id="langDropdown"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ AD: TOP BANNER ══ -->
+<div class="ad-slot ad-top" id="adTop">
+  <!-- Google AdSense: replace with your ad code -->
+  <div class="ad-placeholder">Advertisement</div>
+</div>
+
+<!-- ══ HERO ══ -->
+<header class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-content">
+    <h1 class="hero-title" data-i18n="hero.title">Free Pixel Games<br><span>Play Instantly</span></h1>
+    <p class="hero-sub" data-i18n="hero.sub">No download. No login. Just play.</p>
+    <a class="cta-btn" href="#games" data-i18n="hero.cta">▶ Start Playing</a>
+  </div>
+  <div class="hero-floats">
+    <span class="float-icon" style="--d:0s;--x:10%;--y:20%">👾</span>
+    <span class="float-icon" style="--d:.4s;--x:80%;--y:30%">🎮</span>
+    <span class="float-icon" style="--d:.8s;--x:60%;--y:70%">⭐</span>
+    <span class="float-icon" style="--d:1.2s;--x:20%;--y:75%">🏆</span>
+    <span class="float-icon" style="--d:1.6s;--x:90%;--y:65%">💎</span>
+  </div>
+</header>
+
+<!-- ══ CATEGORY TABS ══ -->
+<section class="category-bar" id="games">
+  <div class="container">
+    <button class="cat-tab active" data-cat="all" data-i18n="cat.all">All</button>
+    <button class="cat-tab" data-cat="action" data-i18n="cat.action">Action</button>
+    <button class="cat-tab" data-cat="puzzle" data-i18n="cat.puzzle">Puzzle</button>
+    <button class="cat-tab" data-cat="casual" data-i18n="cat.casual">Casual</button>
+    <button class="cat-tab" data-cat="arcade" data-i18n="cat.arcade">Arcade</button>
+    <button class="cat-tab" data-cat="strategy" data-i18n="cat.strategy">Strategy</button>
+  </div>
+</section>
+
+<!-- ══ GAME GRID ══ -->
+<main class="container">
+  <div class="section-header">
+    <h2 class="section-title" data-i18n="section.featured">⭐ Featured Games</h2>
+  </div>
+  <div class="game-grid" id="gameGrid"></div>
+  <div class="load-more-wrap">
+    <button class="load-more-btn" id="loadMoreBtn" data-i18n="btn.loadmore">Load More</button>
+  </div>
+</main>
+
+<!-- ══ AD: MID BANNER ══ -->
+<div class="ad-slot ad-mid">
+  <div class="ad-placeholder">Advertisement</div>
+</div>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-logo">
+      <span class="pixel-icon">🕹️</span> PixelArcade
+      <p class="footer-desc" data-i18n="footer.desc">Free browser games for everyone.</p>
+    </div>
+    <div class="footer-links">
+      <a href="pages/about.html" data-i18n="footer.about">About</a>
+      <a href="pages/privacy.html" data-i18n="footer.privacy">Privacy</a>
+      <a href="pages/contact.html" data-i18n="footer.contact">Contact</a>
+      <a href="admin/index.html" data-i18n="footer.admin">Admin</a>
+    </div>
+    <p class="footer-copy">© 2026 PixelArcade. MIT License.</p>
+  </div>
+</footer>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/games-data.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>
