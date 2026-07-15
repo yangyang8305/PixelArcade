@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Game — PixelArcade</title>
+<meta name="description" id="metaDesc" content="Play free games on PixelArcade.">
+<title id="pageTitle">Game — PixelArcade</title>
 <link rel="stylesheet" href="../assets/css/main.css">
 <link rel="stylesheet" href="../assets/css/game.css">
 </head>
@@ -23,18 +24,15 @@
   </div>
 </nav>
 
-<!-- ══ AD ①: TOP BANNER (728×90) — 页面顶部常驻 ══ -->
+<!-- ══ AD ①: TOP BANNER (728×90) ══ -->
 <div class="ad-slot ad-top" id="adSlotTop">
-  <!-- 下面替换成你的 AdSense 代码 -->
-  <div class="ad-placeholder">&#9650; AD SLOT ① — Top Banner 728×90</div>
+  <div class="ad-placeholder">▲ AD SLOT ① — Top Banner 728×90</div>
 </div>
 
 <div class="container game-page">
-
-  <!-- 游戏主区布局: 左侧小广告 + 中间游戏 + 右侧广告 -->
   <div class="game-master-layout">
 
-    <!-- ══ AD ②: LEFT SKYSCRAPER (160×600) — 游戏左侧常驻 ══ -->
+    <!-- ══ AD ②: LEFT SKYSCRAPER (160×600) ══ -->
     <div class="ad-skyscraper ad-left" id="adSlotLeft">
       <div class="ad-placeholder vertical">AD ②<br>160×600<br>左侧</div>
     </div>
@@ -46,17 +44,14 @@
         <div class="game-tags" id="gameTags"></div>
       </div>
 
-      <!-- 游戏画面 -->
       <div class="game-player-wrap" id="playerWrap">
         <iframe id="gameFrame" allowfullscreen></iframe>
         <button class="fullscreen-btn" id="fsBtn">⛶ Fullscreen</button>
 
-        <!-- ══ AD ③: IN-GAME STICKY MINI BANNER — 游戏中常驻小条 ══ -->
-        <!-- 展示在游戏画面内部底部，半透明浮层 -->
+        <!-- ══ AD ③: IN-GAME STICKY MINI BANNER ══ -->
         <div class="ad-ingame-sticky" id="adSlotIngame">
           <span class="ad-ingame-label">AD</span>
           <div class="ad-ingame-content">
-            <!-- 替换成 AdSense 原生广告或 320×50 的移动横幅广告 -->
             <div class="ad-placeholder" style="padding:4px 20px;font-size:10px;border:none;background:transparent;color:rgba(255,255,255,0.5)">In-Game Banner 320×50</div>
           </div>
           <button class="ad-ingame-close" id="adIngameClose" title="Minimize">−</button>
@@ -65,40 +60,37 @@
 
       <p style="color:var(--text2);font-size:13px;margin-top:10px" id="gameDesc"></p>
 
-      <!-- ══ AD ④: BELOW PLAYER BANNER (728×90) — 游戏下方 ══ -->
+      <!-- ══ AD ④: BELOW PLAYER BANNER (728×90) ══ -->
       <div class="ad-slot ad-below-player" id="adSlotBelow" style="margin:20px 0">
         <div class="ad-placeholder">AD SLOT ④ — Below Player 728×90</div>
       </div>
 
-      <!-- 相关游戏 -->
       <div class="section-header">
         <h2 class="section-title">🎮 More Games</h2>
       </div>
       <div class="related-games" id="relatedGames"></div>
     </div>
 
-    <!-- ══ AD ⑤⑥: RIGHT SIDEBAR (300×250 ×2) — 右侧常驻 ══ -->
+    <!-- ══ AD ⑤⑥: RIGHT SIDEBAR (300×250 ×2) ══ -->
     <div class="game-sidebar">
-      <!-- ⑤ -->
       <div class="ad-sidebar" id="adSlotRight1">
         <div class="ad-placeholder" style="padding:60px 20px">AD SLOT ⑤<br>300×250</div>
       </div>
-      <!-- ⑥ -->
       <div class="ad-sidebar" id="adSlotRight2" style="margin-top:16px">
         <div class="ad-placeholder" style="padding:60px 20px">AD SLOT ⑥<br>300×250</div>
       </div>
     </div>
 
-  </div><!-- end game-master-layout -->
+  </div>
 </div>
 
-<!-- ══ AD ⑦: BOTTOM STICKY BAR (320×50) — 页面底部浮层常驻 ══ -->
+<!-- ══ AD ⑦: BOTTOM STICKY BAR (320×50) ══ -->
 <div class="ad-bottom-sticky" id="adSlotBottomSticky">
   <button class="ad-sticky-close" id="adStickyClose">×</button>
-  <div class="ad-placeholder" style="padding:6px 40px;border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:10px">AD SLOT ⑦ — Bottom Sticky 320×50 (Always Visible)</div>
+  <div class="ad-placeholder" style="padding:6px 40px;border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:10px">AD SLOT ⑦ — Bottom Sticky 320×50</div>
 </div>
 
-<!-- ══ REWARDED AD MODAL — 游戏结束/暂停触发 ══ -->
+<!-- ══ REWARDED AD MODAL ══ -->
 <div class="rewarded-modal" id="rewardedModal">
   <div class="rewarded-box">
     <div class="rewarded-icon">💀</div>
@@ -126,37 +118,56 @@
 <script src="../assets/js/games-data.js"></script>
 <script>
 (function(){
-  /* ── Load game ── */
+  if (typeof GAMES === 'undefined') return;
+
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
   const game = GAMES.find(g => g.id === id);
-  if (!game) { document.getElementById('gameTitle').textContent = 'Game not found'; return; }
+  if (!game) {
+    document.getElementById('gameTitle').textContent = 'Game not found';
+    return;
+  }
 
-  document.title = `${game.name} — PixelArcade`;
+  // Dynamic title + meta description for SEO
+  document.title = game.name + ' — PixelArcade';
+  document.getElementById('metaDesc').setAttribute('content',
+    game.desc + ' Play free on PixelArcade.');
+
   document.getElementById('gameTitle').textContent = game.name;
   document.getElementById('gameDesc').textContent = game.desc;
   document.getElementById('gameFrame').src = game.url;
   document.getElementById('gameTags').innerHTML =
     game.tags.map(t => `<span class="game-tag">${t}</span>`).join('');
 
-  /* ── Fullscreen ── */
+  // Derive allowed origin from game URL for postMessage security
+  let gameOrigin = '*';
+  try { gameOrigin = new URL(game.url).origin; } catch(e) {}
+
+  // Fullscreen
   document.getElementById('fsBtn').addEventListener('click', () => {
     const wrap = document.getElementById('playerWrap');
     if (wrap.requestFullscreen) wrap.requestFullscreen();
   });
 
-  /* ── Related games ── */
+  // Related games (use addEventListener, not inline onclick)
   const related = GAMES.filter(g => g.category === game.category && g.id !== game.id).slice(0, 6);
-  document.getElementById('relatedGames').innerHTML = related.map(g => `
-    <div class="game-card" onclick="location.href='game.html?id=${g.id}'">
+  const relatedContainer = document.getElementById('relatedGames');
+  related.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.innerHTML = `
       <div class="game-thumb-placeholder" style="font-size:32px">${g.emoji}</div>
       <div class="game-info">
         <div class="game-name">${g.name}</div>
         <div class="game-meta"><span class="game-cat">${g.category}</span></div>
-      </div>
-    </div>`).join('');
+      </div>`;
+    card.addEventListener('click', () => {
+      location.href = 'game.html?id=' + encodeURIComponent(g.id);
+    });
+    relatedContainer.appendChild(card);
+  });
 
-  /* ── In-game sticky banner: minimize/restore ── */
+  // In-game sticky banner minimize/restore
   const ingameAd = document.getElementById('adSlotIngame');
   const ingameClose = document.getElementById('adIngameClose');
   let ingameMinimized = false;
@@ -166,38 +177,39 @@
     ingameClose.textContent = ingameMinimized ? '+' : '−';
   });
 
-  /* ── Bottom sticky close ── */
+  // Bottom sticky close
   document.getElementById('adStickyClose').addEventListener('click', () => {
     document.getElementById('adSlotBottomSticky').style.display = 'none';
   });
 
-  /* ── Rewarded ad modal ── */
+  // Rewarded ad modal
   const modal = document.getElementById('rewardedModal');
   window.addEventListener('message', e => {
-    if (e.data === 'gameover' || e.data === 'pause') {
-      showRewardedAd();
-    }
+    // Only accept messages from the game's own origin
+    if (gameOrigin !== '*' && e.origin !== gameOrigin) return;
+    if (e.data === 'gameover' || e.data === 'pause') showRewardedAd();
   });
 
   function showRewardedAd() {
     modal.classList.add('show');
-    // 5秒倒计时后才能点跳过
     let t = 5;
     const timerEl = document.getElementById('rewardedTimer');
+    const skipBtn = document.getElementById('btnSkip');
     timerEl.textContent = `Skip in ${t}s`;
+    skipBtn.disabled = true;
     const ti = setInterval(() => {
       t--;
-      if (t > 0) timerEl.textContent = `Skip in ${t}s`;
-      else { timerEl.textContent = ''; clearInterval(ti); }
+      if (t > 0) { timerEl.textContent = `Skip in ${t}s`; }
+      else { timerEl.textContent = ''; clearInterval(ti); skipBtn.disabled = false; }
     }, 1000);
-    document.getElementById('btnSkip').disabled = true;
-    setTimeout(() => { document.getElementById('btnSkip').disabled = false; }, 5000);
   }
 
   document.getElementById('btnWatch').addEventListener('click', () => {
-    // TODO: 接入真实激励视频广告 SDK
     modal.classList.remove('show');
-    document.getElementById('gameFrame').contentWindow.postMessage('revive', '*');
+    const frame = document.getElementById('gameFrame');
+    if (frame.contentWindow) {
+      frame.contentWindow.postMessage('revive', gameOrigin);
+    }
   });
   document.getElementById('btnSkip').addEventListener('click', () => {
     modal.classList.remove('show');
