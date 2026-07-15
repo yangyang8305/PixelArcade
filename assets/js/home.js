@@ -1,4 +1,6 @@
 (function() {
+  if (typeof GAMES === 'undefined') return;
+
   const GRID     = document.getElementById('gameGrid');
   const SEARCH   = document.getElementById('searchInput');
   const LOAD_BTN = document.getElementById('loadMoreBtn');
@@ -7,7 +9,6 @@
   let currentPage = 1;
   let filtered    = [];
 
-  // 每个分类对应渐变色（与 CSS 保持一致）
   const CAT_COLORS = {
     arcade:   ['#001a3a','#002855'],
     puzzle:   ['#1a0040','#2a0060'],
@@ -23,9 +24,10 @@
     const stars   = '★'.repeat(filled) + '☆'.repeat(5 - filled);
     const colors  = CAT_COLORS[g.category] || ['#0a0a1f','#111130'];
 
-    return `
-    <div class="game-card" data-cat="${g.category}"
-         onclick="location.href='pages/game.html?id=${g.id}'">
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.dataset.cat = g.category;
+    card.innerHTML = `
       <div class="game-thumb-placeholder"
            style="background:linear-gradient(135deg,#0a0a1f 0%,${colors[0]} 50%,${colors[1]} 100%)">
         ${g.emoji}
@@ -37,8 +39,11 @@
           <span class="game-cat">${g.category}</span>
           <span class="game-rating">${stars}</span>
         </div>
-      </div>
-    </div>`;
+      </div>`;
+    card.addEventListener('click', () => {
+      location.href = 'pages/game.html?id=' + encodeURIComponent(g.id);
+    });
+    return card;
   }
 
   function filterGames() {
@@ -55,13 +60,14 @@
 
   function renderGrid(animate) {
     const slice = filtered.slice(0, currentPage * PAGE_SIZE);
+    GRID.innerHTML = '';
     if (!slice.length) {
       GRID.innerHTML = `<div class="empty-state"><div class="empty-icon">🕹️</div><p>No games found.</p></div>`;
     } else {
-      GRID.innerHTML = slice.map(renderCard).join('');
+      slice.forEach(g => GRID.appendChild(renderCard(g)));
       if (animate) {
         GRID.classList.remove('entering');
-        void GRID.offsetWidth; // reflow
+        void GRID.offsetWidth;
         GRID.classList.add('entering');
       }
     }
@@ -70,7 +76,6 @@
     }
   }
 
-  // Category tabs
   document.querySelectorAll('.cat-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
