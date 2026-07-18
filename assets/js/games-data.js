@@ -8,7 +8,8 @@ const GAMES = [
     rating: 4.8,
     plays: 12400,
     badge: 'hot',
-    url: 'https://freepacman.org',
+    url: 'games/pacman/index.html',
+    thumb: 'games/pacman/thumb.svg',
     desc: 'Classic Pac-Man pixel edition. Eat all dots, avoid ghosts!',
     tags: ['arcade','classic','pixel']
   },
@@ -20,7 +21,8 @@ const GAMES = [
     rating: 4.6,
     plays: 9800,
     badge: 'new',
-    url: 'https://playsnake.org',
+    url: 'games/snake/index.html',
+    thumb: 'games/snake/thumb.svg',
     desc: 'Guide the snake, eat food, grow longer. How long can you survive?',
     tags: ['arcade','casual']
   },
@@ -32,7 +34,8 @@ const GAMES = [
     rating: 4.8,
     plays: 15600,
     badge: 'hot',
-    url: 'https://tetris.com/play-tetris',
+    url: 'games/tetris/index.html',
+    thumb: 'games/tetris/thumb.svg',
     desc: 'The classic block stacking game. Clear lines to survive!',
     tags: ['arcade','classic']
   },
@@ -44,7 +47,8 @@ const GAMES = [
     rating: 4.5,
     plays: 7300,
     badge: null,
-    url: 'https://minesweeperonline.com',
+    url: 'games/minesweeper/index.html',
+    thumb: 'games/minesweeper/thumb.svg',
     desc: 'Classic minesweeper. Clear the board without hitting a mine!',
     tags: ['puzzle','classic']
   },
@@ -56,7 +60,8 @@ const GAMES = [
     rating: 4.4,
     plays: 5100,
     badge: null,
-    url: 'https://www.sokobanonline.com/play',
+    url: 'games/sokoban/index.html',
+    thumb: 'games/sokoban/thumb.svg',
     desc: 'Push boxes to the right spots. Deceptively tricky!',
     tags: ['puzzle','strategy']
   },
@@ -68,7 +73,8 @@ const GAMES = [
     rating: 4.7,
     plays: 11200,
     badge: 'hot',
-    url: 'https://play2048.co',
+    url: 'games/2048/index.html',
+    thumb: 'games/2048/thumb.svg',
     desc: 'Slide tiles and combine numbers to reach 2048!',
     tags: ['puzzle','strategy']
   },
@@ -80,7 +86,8 @@ const GAMES = [
     rating: 4.5,
     plays: 6200,
     badge: null,
-    url: 'https://sudoku.com',
+    url: 'games/sudoku/index.html',
+    thumb: 'games/sudoku/thumb.svg',
     desc: 'Fill the grid so every row, column and box has 1-9.',
     tags: ['puzzle','logic']
   },
@@ -92,7 +99,8 @@ const GAMES = [
     rating: 4.2,
     plays: 4100,
     badge: null,
-    url: 'https://www.helpfulgames.com/subjects/brain-training/memory.html',
+    url: 'games/memory/index.html',
+    thumb: 'games/memory/thumb.svg',
     desc: 'Flip cards and find matching pairs. Train your memory!',
     tags: ['puzzle','memory']
   },
@@ -104,7 +112,8 @@ const GAMES = [
     rating: 4.5,
     plays: 18600,
     badge: 'hot',
-    url: 'https://flappybird.io',
+    url: 'games/flappy/index.html',
+    thumb: 'games/flappy/thumb.svg',
     desc: "Tap to fly through pipes. One wrong move and it's over!",
     tags: ['casual','endless']
   },
@@ -116,7 +125,8 @@ const GAMES = [
     rating: 4.4,
     plays: 8900,
     badge: 'new',
-    url: 'https://html5games.com/Game/Doodle-Jump',
+    url: 'games/doodle/index.html',
+    thumb: 'games/doodle/thumb.svg',
     desc: "Jump higher and higher. Don't fall!",
     tags: ['casual','endless']
   },
@@ -128,7 +138,8 @@ const GAMES = [
     rating: 4.3,
     plays: 6700,
     badge: null,
-    url: 'https://www.crazygames.com/game/stack',
+    url: 'games/stack/index.html',
+    thumb: 'games/stack/thumb.svg',
     desc: 'Stack blocks as high as you can. Timing is everything!',
     tags: ['casual','skill']
   },
@@ -140,7 +151,8 @@ const GAMES = [
     rating: 4.1,
     plays: 5300,
     badge: null,
-    url: 'https://www.ponggame.org',
+    url: 'games/pong/index.html',
+    thumb: 'games/pong/thumb.svg',
     desc: 'The original arcade classic. Beat your opponent!',
     tags: ['arcade','classic','2player']
   },
@@ -152,7 +164,8 @@ const GAMES = [
     rating: 4.4,
     plays: 7800,
     badge: null,
-    url: 'https://www.breakoutgame.co',
+    url: 'games/breakout/index.html',
+    thumb: 'games/breakout/thumb.svg',
     desc: "Break all the bricks with your ball. Don't miss!",
     tags: ['arcade','classic']
   },
@@ -164,7 +177,8 @@ const GAMES = [
     rating: 4.6,
     plays: 9400,
     badge: 'hot',
-    url: 'https://freeinvaders.org',
+    url: 'games/spaceinvaders/index.html',
+    thumb: 'games/spaceinvaders/thumb.svg',
     desc: 'Defend Earth from the alien invasion!',
     tags: ['action','classic','shooter']
   },
@@ -176,7 +190,8 @@ const GAMES = [
     rating: 4.6,
     plays: 8100,
     badge: 'new',
-    url: 'https://www.crazygames.com/game/tower-defense',
+    url: 'games/towerdefense/index.html',
+    thumb: 'games/towerdefense/thumb.svg',
     desc: 'Build towers and stop the enemy waves!',
     tags: ['strategy','defense']
   },
@@ -188,7 +203,8 @@ const GAMES = [
     rating: 4.3,
     plays: 4200,
     badge: null,
-    url: 'https://gomokuonline.com',
+    url: 'games/gomoku/index.html',
+    thumb: 'games/gomoku/thumb.svg',
     desc: 'Five in a row. Beat the AI!',
     tags: ['strategy','board']
   },
@@ -200,7 +216,8 @@ const GAMES = [
     rating: 4.0,
     plays: 3500,
     badge: null,
-    url: 'https://playtictactoe.org',
+    url: 'games/tictactoe/index.html',
+    thumb: 'games/tictactoe/thumb.svg',
     desc: 'X vs O. The timeless classic.',
     tags: ['strategy','2player']
   },
@@ -212,7 +229,8 @@ const GAMES = [
     rating: 4.5,
     plays: 6900,
     badge: 'new',
-    url: 'https://hextris.io',
+    url: 'games/hextris/index.html',
+    thumb: 'games/hextris/thumb.svg',
     desc: 'Hexagonal Tetris. A unique twist on the classic!',
     tags: ['arcade','puzzle']
   }

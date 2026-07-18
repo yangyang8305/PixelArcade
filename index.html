@@ -4,7 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="PixelArcade - Free online HTML5 games. Play instantly, no download needed.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PixelArcade 🕹️ Free Online Games">
+<meta property="og:description" content="Free online HTML5 games. Play instantly, no download needed.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
 <title>PixelArcade 🕹️ Free Online Games</title>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"PixelArcade",
+ "description":"Free online HTML5 games. Play instantly, no download needed."}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/css/main.css">
@@ -20,7 +28,7 @@
   </a>
   <div class="nav-center">
     <input class="search-box" id="searchInput" type="text"
-           placeholder="Search games..." autocomplete="off">
+           placeholder="Search games..." autocomplete="off" data-i18n="search.placeholder">
   </div>
   <div class="nav-right">
     <a class="nav-link" href="index.html" data-i18n="nav.home">Home</a>
@@ -70,6 +78,12 @@
 
 <!-- GAME GRID -->
 <main class="container" style="padding-top:0">
+  <section id="recentSection" style="display:none">
+    <div class="section-header">
+      <h2 class="section-title" data-i18n="section.recent">🕒 Recently Played</h2>
+    </div>
+    <div class="game-grid recent-row" id="recentRow"></div>
+  </section>
   <div class="section-header">
     <h2 class="section-title" data-i18n="section.featured">⭐ Featured Games</h2>
   </div>

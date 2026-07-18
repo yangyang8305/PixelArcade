@@ -1,0 +1,14 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='300' height='200' fill='#fffdf5'/>
+<rect x='60' y='160' width='50' height='12' rx='3' fill='#4caf50'/>
+<rect x='160' y='130' width='50' height='12' rx='3' fill='#4caf50'/>
+<rect x='30' y='100' width='50' height='12' rx='3' fill='#4caf50'/>
+<rect x='200' y='75' width='50' height='12' rx='3' fill='#4caf50'/>
+<rect x='80' y='50' width='50' height='12' rx='3' fill='#4caf50'/>
+<!-- player -->
+<rect x='172' y='100' width='30' height='30' fill='#f5a623'/>
+<rect x='178' y='106' width='8' height='8' fill='#fff'/>
+<rect x='194' y='106' width='8' height='8' fill='#fff'/>
+<rect x='180' y='108' width='4' height='4' fill='#333'/>
+<rect x='196' y='108' width='4' height='4' fill='#333'/>
+<rect x='182' y='118' width='10' height='4' fill='#f55'/>
+<text x='150' y='192' font-family='Arial' font-size='14' font-weight='bold' fill='#555' text-anchor='middle'>🐦 涂鸦跳跳</text></svg>

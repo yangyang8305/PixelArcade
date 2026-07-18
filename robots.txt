@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+# TODO: 上线后把域名换成你自己的
+Sitemap: https://YOUR-DOMAIN.com/sitemap.xml

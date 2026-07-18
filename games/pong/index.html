@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>乒乓球</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#fff;padding:16px}
+h1{font-size:1.8rem;margin-bottom:8px;letter-spacing:4px;color:#fff}
+canvas{display:block;border:2px solid #333}
+.hint{margin-top:10px;font-size:.78rem;color:#555;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#fff;font-size:2rem;margin-bottom:10px;letter-spacing:2px}
+#overlay p{color:#aaa;margin-bottom:20px;text-align:center}
+#overlay button{background:#fff;color:#000;border:none;padding:12px 40px;border-radius:4px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:2px}
+</style>
+</head>
+<body>
+<h1>PONG</h1>
+<canvas id="c" width="600" height="400"></canvas>
+<p class="hint">玩家：W/S 或屏幕上下半边点击 | AI 自动控制右棒</p>
+<div id="overlay">
+  <h2>PONG</h2>
+  <p>用挡板将球弹回去，让对手接不到！<br>先得 7 分获胜。</p>
+  <button onclick="startGame()">开始游戏</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var W=600,H=400,PW=10,PH=70,BALL=8,SPEED=4;
+var player,ai,ball,ps,as,alive,raf;
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  player={y:H/2-PH/2,dy:0};
+  ai={y:H/2-PH/2};
+  resetBall(1);
+  ps=0;as=0;alive=true;
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+function resetBall(dir){
+  var angle=(Math.random()*.6-.3);
+  ball={x:W/2,y:H/2,vx:SPEED*dir,vy:SPEED*Math.sin(angle)};
+}
+function loop(){
+  update();draw();
+  raf=requestAnimationFrame(loop);
+}
+var keys={};
+document.addEventListener('keydown',function(e){keys[e.key]=true;});
+document.addEventListener('keyup',function(e){keys[e.key]=false;});
+// touch
+C.addEventListener('touchstart',function(e){
+  var rect=C.getBoundingClientRect();
+  var ty=(e.touches[0].clientY-rect.top)*(H/rect.height);
+  touchY=ty;touching=true;
+},{passive:true});
+C.addEventListener('touchmove',function(e){
+  var rect=C.getBoundingClientRect();
+  touchY=(e.touches[0].clientY-rect.top)*(H/rect.height);
+},{passive:true});
+C.addEventListener('touchend',function(){touching=false;},{passive:true});
+var touchY=0,touching=false;
+C.addEventListener('click',function(e){
+  var rect=C.getBoundingClientRect();
+  var ty=(e.clientY-rect.top)*(H/rect.height);
+  player.dy=ty<H/2?-6:6;
+});
+function update(){
+  // player
+  var speed=6;
+  if(keys['w']||keys['W'])player.dy=-speed;
+  else if(keys['s']||keys['S'])player.dy=speed;
+  else if(!touching)player.dy*=0.8;
+  if(touching)player.dy=(touchY-player.y-PH/2)*0.2;
+  player.y+=player.dy;
+  player.y=Math.max(0,Math.min(H-PH,player.y));
+  // AI
+  var aiCenter=ai.y+PH/2;
+  var diff=ball.y-aiCenter;
+  var aiSpeed=Math.min(Math.abs(diff),3.5);
+  ai.y+=diff>0?aiSpeed:-aiSpeed;
+  ai.y=Math.max(0,Math.min(H-PH,ai.y));
+  // ball
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.y<=BALL||ball.y>=H-BALL)ball.vy*=-1;
+  // player paddle
+  if(ball.x<=PW+20+BALL&&ball.x>=PW+14&&ball.y>=player.y&&ball.y<=player.y+PH){
+    ball.vx=Math.abs(ball.vx)*1.05;
+    ball.vy+=((ball.y-(player.y+PH/2))/(PH/2))*2;
+    ball.vx=Math.min(ball.vx,12);
+  }
+  // AI paddle
+  if(ball.x>=W-PW-20-BALL&&ball.x<=W-PW-14&&ball.y>=ai.y&&ball.y<=ai.y+PH){
+    ball.vx=-Math.abs(ball.vx)*1.02;
+    ball.vy+=((ball.y-(ai.y+PH/2))/(PH/2))*1.5;
+  }
+  // score
+  if(ball.x<0){as++;if(as>=7)endGame(false);else{resetBall(1);}}
+  if(ball.x>W){ps++;if(ps>=7)endGame(true);else{resetBall(-1);}}
+}
+function draw(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  // center line
+  ctx.setLineDash([10,10]);ctx.strokeStyle='#333';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
+  // scores
+  ctx.fillStyle='#fff';ctx.font='bold 48px Arial';ctx.textAlign='center';
+  ctx.fillText(ps,W/4,60);
+  ctx.fillText(as,3*W/4,60);
+  // paddles
+  ctx.fillStyle='#fff';
+  ctx.fillRect(14,player.y,PW,PH);
+  ctx.fillRect(W-PW-14,ai.y,PW,PH);
+  // ball
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(ball.x,ball.y,BALL,0,Math.PI*2);ctx.fill();
+}
+function endGame(win){
+  alive=false;
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>'+(win?'🎉 你赢了！':'🤖 AI 赢了')+'</h2><p>比分：'+ps+' : '+as+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+</script>
+</body>
+</html>

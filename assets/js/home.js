@@ -9,34 +9,35 @@
   let currentPage = 1;
   let filtered    = [];
 
-  const CAT_COLORS = {
-    arcade:   ['#001a3a','#002855'],
-    puzzle:   ['#1a0040','#2a0060'],
-    casual:   ['#002010','#003020'],
-    action:   ['#2a0010','#400020'],
-    strategy: ['#1a1000','#2a2000'],
-  };
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
 
   function renderCard(g) {
     const badge = g.badge
-      ? `<span class="game-badge badge-${g.badge}">${g.badge}</span>` : '';
+      ? `<span class="game-badge badge-${esc(g.badge)}">${esc(g.badge)}</span>` : '';
     const filled  = Math.round(g.rating);
     const stars   = '★'.repeat(filled) + '☆'.repeat(5 - filled);
-    const colors  = CAT_COLORS[g.category] || ['#0a0a1f','#111130'];
+    const thumb = g.thumb
+      ? `<img class="game-thumb-img" src="${esc(g.thumb)}" alt="${esc(g.name)}" loading="lazy"
+             onerror="this.remove()">`
+      : '';
 
     const card = document.createElement('div');
     card.className = 'game-card';
     card.dataset.cat = g.category;
     card.innerHTML = `
-      <div class="game-thumb-placeholder"
-           style="background:linear-gradient(135deg,#0a0a1f 0%,${colors[0]} 50%,${colors[1]} 100%)">
-        ${g.emoji}
+      <div class="game-thumb-placeholder">
+        <span class="game-thumb-emoji">${g.emoji}</span>
+        ${thumb}
       </div>
       ${badge}
       <div class="game-info">
-        <div class="game-name">${g.name}</div>
+        <div class="game-name">${esc(g.name)}</div>
         <div class="game-meta">
-          <span class="game-cat">${g.category}</span>
+          <span class="game-cat">${esc(g.category)}</span>
           <span class="game-rating">${stars}</span>
         </div>
       </div>`;
@@ -76,6 +77,19 @@
     }
   }
 
+  // ── Recently played (written by game page, read here) ──
+  function renderRecent() {
+    const section = document.getElementById('recentSection');
+    const row     = document.getElementById('recentRow');
+    if (!section || !row) return;
+    let ids = [];
+    try { ids = JSON.parse(localStorage.getItem('pa_recent') || '[]'); } catch (e) {}
+    const games = ids.map(id => GAMES.find(g => g.id === id)).filter(Boolean).slice(0, 6);
+    if (!games.length) return;
+    games.forEach(g => row.appendChild(renderCard(g)));
+    section.style.display = '';
+  }
+
   document.querySelectorAll('.cat-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
@@ -96,4 +110,5 @@
 
   filtered = GAMES.slice();
   renderGrid(true);
+  renderRecent();
 })();

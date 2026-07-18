@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>推箱子 Sokoban</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  width:100%;height:100%;
+  background:#1a0e05;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  overflow:hidden;
+  font-family:'Courier New',monospace;
+  color:#e8c87a;
+}
+
+/* ── HUD ── */
+#hud{
+  width:100%;max-width:520px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 14px;
+  background:#110900;
+  border-bottom:2px solid #5c3a1e;
+}
+.hud-lbl{font-size:9px;letter-spacing:2px;color:#7a5c2a;text-transform:uppercase}
+.hud-val{font-size:18px;font-weight:700;color:#e8c87a;text-shadow:0 0 6px #c8921a}
+.hud-btn{
+  padding:4px 12px;
+  background:transparent;
+  border:1.5px solid #5c3a1e;
+  border-radius:4px;
+  color:#c8921a;
+  font-size:11px;
+  letter-spacing:1px;
+  cursor:pointer;
+  font-family:'Courier New',monospace;
+  transition:all .15s;
+}
+.hud-btn:hover{background:#5c3a1e;color:#e8c87a}
+
+/* ── 游戏区 ── */
+#game-wrap{
+  position:relative;
+  width:100%;max-width:520px;
+  flex:1;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  background:#1a0e05;
+}
+canvas{
+  display:block;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+}
+
+/* ── 方向键 ── */
+#dpad{
+  width:100%;max-width:520px;
+  display:grid;
+  grid-template-columns:repeat(3,54px);
+  grid-template-rows:repeat(2,54px);
+  gap:6px;
+  justify-content:center;
+  padding:10px 0;
+  background:#110900;
+  border-top:2px solid #5c3a1e;
+}
+#dpad button{
+  width:54px;height:54px;
+  background:rgba(92,58,30,.25);
+  border:1.5px solid rgba(92,58,30,.6);
+  border-radius:8px;
+  color:#c8921a;
+  font-size:22px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+  transition:background .1s;
+}
+#dpad button:active{background:rgba(92,58,30,.6)}
+#dpad .empty{background:transparent;border:none;pointer-events:none}
+
+/* ── 覆盖层 ── */
+#overlay{
+  position:absolute;inset:0;
+  background:rgba(10,5,0,.88);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:20;
+}
+#overlay.hidden{display:none}
+.ov-title{
+  font-size:30px;font-weight:900;
+  letter-spacing:6px;
+  color:#e8c87a;
+  text-shadow:0 0 18px #c8921a,0 0 36px #a06010;
+  margin-bottom:4px;
+  animation:blink 1.2s ease-in-out infinite alternate;
+}
+@keyframes blink{from{opacity:.6}to{opacity:1}}
+.ov-sub{font-size:10px;letter-spacing:3px;color:#7a5c2a;margin-bottom:22px}
+.ov-info{font-size:12px;color:#c8921a;letter-spacing:1px;margin-bottom:24px;text-align:center;line-height:1.8}
+.ov-btn{
+  padding:10px 32px;
+  font-size:12px;letter-spacing:3px;
+  font-family:'Courier New',monospace;
+  background:transparent;
+  border:2px solid #e8c87a;
+  color:#e8c87a;
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:all .15s;
+  text-shadow:0 0 6px #c8921a;
+  box-shadow:0 0 10px #c8921a44;
+}
+.ov-btn:hover{background:#e8c87a;color:#1a0e05}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div>
+    <div class="hud-lbl">LEVEL</div>
+    <div class="hud-val" id="h-level">1</div>
+  </div>
+  <div>
+    <div class="hud-lbl">MOVES</div>
+    <div class="hud-val" id="h-moves">0</div>
+  </div>
+  <div>
+    <div class="hud-lbl">BOXES</div>
+    <div class="hud-val" id="h-boxes">0/0</div>
+  </div>
+  <button class="hud-btn" id="btn-undo">↩ UNDO</button>
+  <button class="hud-btn" id="btn-reset">↻ RESET</button>
+</div>
+
+<div id="game-wrap">
+  <canvas id="c"></canvas>
+  <div id="overlay">
+    <div class="ov-title">SOKOBAN</div>
+    <div class="ov-sub">pixel warehouse</div>
+    <div class="ov-info">方向键 / WASD 推动木箱<br>将所有木箱推到目标点获胜</div>
+    <button class="ov-btn" id="ov-btn">START GAME</button>
+  </div>
+</div>
+
+<div id="dpad">
+  <div class="empty"></div>
+  <button data-dir="up">▲</button>
+  <div class="empty"></div>
+  <button data-dir="left">◀</button>
+  <button data-dir="down">▼</button>
+  <button data-dir="right">▶</button>
+</div>
+
+<script>
+// ══════ 关卡数据  # wall, @ player, $ box, . target, * box-on-target, + player-on-target ══════
+const LEVELS = [
+  // 1
+  ['#########','#   .   #','# $     #','#   @   #','#########'],
+  // 2
+  ['#######','#     #','# .$. #','# .$. #','# @   #','#######'],
+  // 3
+  ['########','#      #','# .$$. #','# $..$ #','#  @@  #','########'],
+  // 4
+  ['  #####','  #   #','  # $##','###. $#','#. $ .#','## $.##','#  .  #','## @  #','########'],
+  // 5
+  ['#####  ','#   ###','# $ $ #','# . . #','## @  #','#######'],
+  // 6
+  ['########','#  @   #','# $$.  #','# . $  #','#   .  #','########'],
+  // 7
+  ['  ######','  #    #','  # $$ #','### .# #','# . $  #','# @  ###','######  '],
+  // 8
+  ['#######','#     #','# .$. #','# $@$ #','# .$. #','#     #','#######'],
+  // 9
+  ['  ####','###  #','#    #','# .$.#','# $@ #','## . #',' #####'],
+  // 10
+  [' ####','##  ####','#  $   #','# .$@. #','#  $   #','##  ####',' ####  '],
+  // 11
+  ['#######','#  @  #','# $ $ #','#. . .#','# $ $ #','#  .  #','#######'],
+  // 12
+  ['  ####  ',' ##  ## ',' #    # ','## $$ ##','#  ..  #','# @    #','########'],
+  // 13
+  ['########','# @    #','# $$   #','# ..## #','##  ## #','#      #','########'],
+  // 14
+  ['  #####','### @ #','#  $. #','# .$. #','# .$ ###','#     #',' #####'],
+  // 15 (最终关)
+  ['#########','# @ .   #','# $$.$$ #','# .   . #','# $$.$$ #','#   .   #','#########'],
+];
+
+const T={WALL:'#',PLAYER:'@',BOX:'$',TARGET:'.',BOX_ON:'*',PLAYER_ON:'+',EMPTY:' '};
+
+const C=document.getElementById('c');
+const ctx=C.getContext('2d');
+let CELL,W,H;
+const wrap=document.getElementById('game-wrap');
+
+let levelIdx=0,grid,playerPos,moves,history;
+
+function parseLevel(raw){
+  const rows=raw.map(r=>r.split(''));
+  const h=rows.length,w=Math.max(...rows.map(r=>r.length));
+  rows.forEach(r=>{while(r.length<w)r.push(' ');});
+  let px=0,py=0;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++)
+    if(rows[y][x]==='@'||rows[y][x]==='+'){px=x;py=y;}
+  return{grid:rows,px,py,w,h};
+}
+
+function loadLevel(idx){
+  levelIdx=idx;
+  const d=parseLevel(LEVELS[idx]);
+  grid=d.grid; playerPos={x:d.px,y:d.py};
+  moves=0; history=[];
+  resize();
+  updateHUD();
+}
+
+function resize(){
+  const maxW=Math.min(wrap.clientWidth,520);
+  const maxH=wrap.clientHeight||400;
+  const d=parseLevel(LEVELS[levelIdx]);
+  CELL=Math.max(10,Math.floor(Math.min(maxW/d.w,maxH/d.h)));
+  W=CELL*d.w; H=CELL*d.h;
+  C.width=W; C.height=H;
+  C.style.width=W+'px'; C.style.height=H+'px';
+}
+window.addEventListener('resize',()=>{ if(grid)resize(); });
+
+function countBoxes(){
+  let done=0,total=0;
+  for(let y=0;y<grid.length;y++) for(let x=0;x<grid[y].length;x++){
+    if(grid[y][x]==='$'||grid[y][x]==='*') total++;
+    if(grid[y][x]==='*') done++;
+  }
+  return{done,total};
+}
+function updateHUD(){
+  document.getElementById('h-level').textContent=levelIdx+1;
+  document.getElementById('h-moves').textContent=moves;
+  const b=countBoxes();
+  document.getElementById('h-boxes').textContent=b.done+'/'+b.total;
+}
+
+function getCell(x,y){ return grid[y]?.[x]??'#'; }
+function setCell(x,y,v){ if(grid[y])grid[y][x]=v; }
+
+function move(dx,dy){
+  const {x,y}=playerPos;
+  const nx=x+dx,ny=y+dy;
+  const nc=getCell(nx,ny);
+  if(nc==='#') return;
+  const nnx=nx+dx,nny=ny+dy;
+  if(nc==='$'||nc==='*'){
+    const nnc=getCell(nnx,nny);
+    if(nnc==='#'||nnc==='$'||nnc==='*') return;
+    // 存历史
+    history.push(JSON.parse(JSON.stringify({grid:grid.map(r=>r.slice()),px:x,py:y})));
+    // 移动箱
+    setCell(nnx,nny,nnc==='.'?'*':'$');
+  } else {
+    history.push(JSON.parse(JSON.stringify({grid:grid.map(r=>r.slice()),px:x,py:y})));
+  }
+  // 移动玩家
+  const curCell=getCell(x,y);
+  setCell(x,y,curCell==='+'?'.':' ');
+  setCell(nx,ny,nc==='.'||nc==='*'?'+':'@');
+  playerPos={x:nx,y:ny};
+  moves++;
+  updateHUD();
+  checkWin();
+}
+
+function undo(){
+  if(!history.length) return;
+  const h=history.pop();
+  grid=h.grid.map(r=>r.slice());
+  playerPos={x:h.px,y:h.py};
+  moves=Math.max(0,moves-1);
+  updateHUD();
+}
+
+function checkWin(){
+  const{done,total}=countBoxes();
+  if(done===total){
+    setTimeout(()=>{
+      if(levelIdx<LEVELS.length-1){ levelIdx++; loadLevel(levelIdx); }
+      else showOverlay('🏆 CLEAR!','所有关卡已通关！','重新开始');
+    },600);
+  }
+}
+
+function showOverlay(title,info,btn){
+  const ov=document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  ov.querySelector('.ov-title').textContent=title||'SOKOBAN';
+  ov.querySelector('.ov-info').textContent=info||'方向键 / WASD 推动木箱';
+  ov.querySelector('#ov-btn').textContent=btn||'START GAME';
+}
+
+// ════════ 像素绘制 ════════
+
+// 地板贴图缓存
+const tileCache={};
+function getTile(type){
+  if(tileCache[type+'_'+CELL]) return tileCache[type+'_'+CELL];
+  const tc=document.createElement('canvas');
+  tc.width=CELL;tc.height=CELL;
+  const tx=tc.getContext('2d');
+  const s=CELL;
+
+  if(type==='floor'){
+    // 木地板
+    tx.fillStyle='#2a1a08'; tx.fillRect(0,0,s,s);
+    // 木纹
+    const stripes=3;
+    for(let i=0;i<stripes;i++){
+      tx.fillStyle=i%2===0?'#2e1d0a':'#271608';
+      tx.fillRect(0,Math.floor(s/stripes*i),s,Math.floor(s/stripes));
+    }
+    // 垆纹
+    tx.strokeStyle='rgba(0,0,0,0.35)';tx.lineWidth=1;
+    for(let i=1;i<stripes;i++){
+      tx.beginPath();tx.moveTo(0,Math.floor(s/stripes*i));
+      tx.lineTo(s,Math.floor(s/stripes*i));tx.stroke();
+    }
+    // 板纹细节
+    tx.strokeStyle='rgba(255,200,100,0.04)';tx.lineWidth=1;
+    for(let i=2;i<s;i+=6){
+      tx.beginPath();tx.moveTo(i,0);tx.lineTo(i,s);tx.stroke();
+    }
+  } else if(type==='wall'){
+    // 石墙贴图
+    tx.fillStyle='#3a2a1a';tx.fillRect(0,0,s,s);
+    const bw=Math.floor(s/2),bh=Math.floor(s/3);
+    const brickColors=['#4a3520','#3e2d18','#422f1a'];
+    for(let row=0;row<3;row++){
+      for(let col=0;col<3;col++){
+        const bx=(col*bw + (row%2===0?0:bw/2))%s;
+        const by=row*bh;
+        const ci=(row*3+col)%3;
+        tx.fillStyle=brickColors[ci];
+        tx.fillRect(bx+1,by+1,bw-2,bh-2);
+        // 边缘阴影
+        tx.fillStyle='rgba(0,0,0,0.4)';
+        tx.fillRect(bx+1,by+1,bw-2,1);
+        tx.fillRect(bx+1,by+1,1,bh-2);
+        // 高光
+        tx.fillStyle='rgba(255,200,120,0.1)';
+        tx.fillRect(bx+2,by+2,bw-4,1);
+      }
+    }
+    // 沙浆缝
+    tx.strokeStyle='#1a0e05';tx.lineWidth=1;
+    for(let row=0;row<3;row++){
+      tx.beginPath();tx.moveTo(0,row*bh);tx.lineTo(s,row*bh);tx.stroke();
+    }
+  } else if(type==='target'){
+    // 目标点：地板上画暗深十字标记
+    tx.fillStyle='#2a1a08';tx.fillRect(0,0,s,s);
+    const stripes=3;
+    for(let i=0;i<stripes;i++){
+      tx.fillStyle=i%2===0?'#2e1d0a':'#271608';
+      tx.fillRect(0,Math.floor(s/stripes*i),s,Math.floor(s/stripes));
+    }
+    const cx=s/2,cy=s/2,r=s*0.3;
+    // 圆圈
+    tx.strokeStyle='#8b6914';tx.lineWidth=2;
+    tx.beginPath();tx.arc(cx,cy,r,0,Math.PI*2);tx.stroke();
+    // 十字
+    tx.strokeStyle='#8b6914';tx.lineWidth=1.5;
+    tx.beginPath();tx.moveTo(cx,cy-r);tx.lineTo(cx,cy+r);tx.stroke();
+    tx.beginPath();tx.moveTo(cx-r,cy);tx.lineTo(cx+r,cy);tx.stroke();
+    // 中心点
+    tx.fillStyle='#c8921a';
+    tx.beginPath();tx.arc(cx,cy,2,0,Math.PI*2);tx.fill();
+  }
+
+  tileCache[type+'_'+CELL]=tc;
+  return tc;
+}
+
+function drawPixelBox(cx,cy,onTarget){
+  const x=cx*CELL,y=cy*CELL,s=CELL;
+  const pad=Math.max(2,Math.floor(s*0.05));
+  const inner=s-pad*2;
+
+  // 地板底
+  ctx.drawImage(getTile(onTarget?'target':'floor'),x,y);
+
+  // 外框阴影
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(x+pad+2,y+pad+2,inner,inner);
+
+  // 木箱主体
+  const grad=ctx.createLinearGradient(x+pad,y+pad,x+pad+inner,y+pad+inner);
+  if(onTarget){
+    grad.addColorStop(0,'#c8d860');
+    grad.addColorStop(0.4,'#a0b040');
+    grad.addColorStop(1,'#607020');
+  } else {
+    grad.addColorStop(0,'#c07820');
+    grad.addColorStop(0.4,'#a05818');
+    grad.addColorStop(1,'#703010');
+  }
+  ctx.fillStyle=grad;
+  ctx.fillRect(x+pad,y+pad,inner,inner);
+
+  // 木纹线条
+  const lineColor=onTarget?'rgba(0,0,0,0.25)':'rgba(0,0,0,0.3)';
+  ctx.strokeStyle=lineColor;ctx.lineWidth=1;
+  const third=inner/3;
+  // 横纹
+  for(let i=1;i<3;i++){
+    ctx.beginPath();
+    ctx.moveTo(x+pad,y+pad+third*i);
+    ctx.lineTo(x+pad+inner,y+pad+third*i);
+    ctx.stroke();
+  }
+  // 竖纹
+  ctx.beginPath();
+  ctx.moveTo(x+pad+inner/2,y+pad);
+  ctx.lineTo(x+pad+inner/2,y+pad+inner);
+  ctx.stroke();
+
+  // X 字样金属钉
+  const nailColor=onTarget?'#d0e060':'#e0a040';
+  const nailSize=Math.max(2,Math.floor(s*0.08));
+  [[pad+nailSize,pad+nailSize],[pad+inner-nailSize,pad+nailSize],
+   [pad+nailSize,pad+inner-nailSize],[pad+inner-nailSize,pad+inner-nailSize]].forEach(([nx,ny])=>{
+    ctx.fillStyle=nailColor;
+    ctx.fillRect(x+nx-nailSize/2,y+ny-nailSize/2,nailSize,nailSize);
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.fillRect(x+nx-nailSize/2,y+ny-nailSize/2,1,1);
+  });
+
+  // 高光（左上角）
+  ctx.fillStyle=onTarget?'rgba(220,255,100,0.35)':'rgba(255,200,100,0.35)';
+  ctx.fillRect(x+pad,y+pad,inner,2);
+  ctx.fillRect(x+pad,y+pad,2,inner);
+
+  // 内发光（如果在目标上）
+  if(onTarget){
+    const glow=ctx.createRadialGradient(x+s/2,y+s/2,0,x+s/2,y+s/2,s/2);
+    glow.addColorStop(0,'rgba(180,255,0,0.25)');
+    glow.addColorStop(1,'rgba(180,255,0,0)');
+    ctx.fillStyle=glow;
+    ctx.fillRect(x,y,s,s);
+  }
+}
+
+function drawPlayer(cx,cy,onTarget){
+  const x=cx*CELL,y=cy*CELL,s=CELL;
+  ctx.drawImage(getTile(onTarget?'target':'floor'),x,y);
+
+  const px=x+s/2, py=y+s/2;
+  const r=s*0.38;
+
+  // 身体外发光
+  const glow=ctx.createRadialGradient(px,py,0,px,py,r*1.5);
+  glow.addColorStop(0,'rgba(80,160,255,0.35)');
+  glow.addColorStop(1,'rgba(80,160,255,0)');
+  ctx.fillStyle=glow;
+  ctx.beginPath();ctx.arc(px,py,r*1.5,0,Math.PI*2);ctx.fill();
+
+  // 身体（像素风小人）
+  // 腿
+  ctx.fillStyle='#1e3a6a';
+  ctx.fillRect(Math.round(px-r*0.35),Math.round(py+r*0.35),Math.round(r*0.3),Math.round(r*0.5));
+  ctx.fillRect(Math.round(px+r*0.05),Math.round(py+r*0.35),Math.round(r*0.3),Math.round(r*0.5));
+
+  // 身子
+  const bodyGrad=ctx.createLinearGradient(px-r*0.45,py-r*0.2,px+r*0.45,py+r*0.35);
+  bodyGrad.addColorStop(0,'#4a90d9');
+  bodyGrad.addColorStop(1,'#1a50a0');
+  ctx.fillStyle=bodyGrad;
+  ctx.fillRect(Math.round(px-r*0.42),Math.round(py-r*0.25),Math.round(r*0.84),Math.round(r*0.65));
+
+  // 袖子
+  ctx.fillStyle='#4a90d9';
+  ctx.fillRect(Math.round(px-r*0.6),Math.round(py-r*0.2),Math.round(r*0.22),Math.round(r*0.45));
+  ctx.fillRect(Math.round(px+r*0.38),Math.round(py-r*0.2),Math.round(r*0.22),Math.round(r*0.45));
+
+  // 头
+  const headGrad=ctx.createRadialGradient(px-r*0.1,py-r*0.65,0,px,py-r*0.4,r*0.42);
+  headGrad.addColorStop(0,'#ffe0b0');
+  headGrad.addColorStop(1,'#d4a070');
+  ctx.fillStyle=headGrad;
+  ctx.beginPath();ctx.arc(px,py-r*0.4,r*0.38,0,Math.PI*2);ctx.fill();
+
+  // 头盔
+  ctx.fillStyle='#1a3060';
+  ctx.beginPath();
+  ctx.arc(px,py-r*0.52,r*0.32,Math.PI,0,false);
+  ctx.fillRect(Math.round(px-r*0.35),Math.round(py-r*0.62),Math.round(r*0.7),Math.round(r*0.15));
+  ctx.fill();
+
+  // 眼睛
+  ctx.fillStyle='#000';
+  ctx.fillRect(Math.round(px-r*0.18),Math.round(py-r*0.46),Math.round(r*0.1),Math.round(r*0.1));
+  ctx.fillRect(Math.round(px+r*0.08),Math.round(py-r*0.46),Math.round(r*0.1),Math.round(r*0.1));
+
+  // 眼神光
+  ctx.fillStyle='rgba(255,255,255,0.8)';
+  ctx.fillRect(Math.round(px-r*0.16),Math.round(py-r*0.47),Math.round(r*0.04),Math.round(r*0.04));
+  ctx.fillRect(Math.round(px+r*0.1),Math.round(py-r*0.47),Math.round(r*0.04),Math.round(r*0.04));
+
+  // 高光
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.fillRect(Math.round(px-r*0.42),Math.round(py-r*0.25),Math.round(r*0.84),2);
+}
+
+function draw(){
+  ctx.fillStyle='#1a0e05';
+  ctx.fillRect(0,0,W,H);
+
+  for(let y=0;y<grid.length;y++){
+    for(let x=0;x<grid[y].length;x++){
+      const c=grid[y][x];
+      if(c===' ') continue;
+      if(c==='#') ctx.drawImage(getTile('wall'),x*CELL,y*CELL);
+      else if(c==='.') ctx.drawImage(getTile('target'),x*CELL,y*CELL);
+      else if(c==='$') drawPixelBox(x,y,false);
+      else if(c==='*') drawPixelBox(x,y,true);
+      else if(c==='@'){ctx.drawImage(getTile('floor'),x*CELL,y*CELL);drawPlayer(x,y,false);}
+      else if(c==='+'){ctx.drawImage(getTile('target'),x*CELL,y*CELL);drawPlayer(x,y,true);}
+      else{ ctx.drawImage(getTile('floor'),x*CELL,y*CELL); }
+    }
+  }
+
+  // 利用边缘暗化
+  const edgeGrad=ctx.createLinearGradient(0,0,W,0);
+  edgeGrad.addColorStop(0,'rgba(0,0,0,0.4)');
+  edgeGrad.addColorStop(0.08,'rgba(0,0,0,0)');
+  edgeGrad.addColorStop(0.92,'rgba(0,0,0,0)');
+  edgeGrad.addColorStop(1,'rgba(0,0,0,0.4)');
+  ctx.fillStyle=edgeGrad; ctx.fillRect(0,0,W,H);
+}
+
+// ════════ 输入 ════════
+function handleDir(d){
+  const map2={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+  const dd=map2[d]; if(dd) move(dd.x,dd.y); draw();
+}
+document.addEventListener('keydown',e=>{
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D','z','Z'].includes(e.key))e.preventDefault();
+  if(!grid) return;
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W') handleDir('up');
+  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') handleDir('down');
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') handleDir('left');
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') handleDir('right');
+  if(e.key==='z'||e.key==='Z') { undo(); draw(); }
+});
+document.querySelectorAll('#dpad button').forEach(btn=>{
+  btn.addEventListener('touchstart',e=>{e.preventDefault();handleDir(btn.dataset.dir);},{passive:false});
+  btn.addEventListener('mousedown',()=>handleDir(btn.dataset.dir));
+});
+document.getElementById('btn-undo').addEventListener('click',()=>{undo();draw();});
+document.getElementById('btn-reset').addEventListener('click',()=>{loadLevel(levelIdx);draw();});
+
+// 触摸滑动
+let tx0,ty0;
+document.getElementById('game-wrap').addEventListener('touchstart',e=>{const t=e.touches[0];tx0=t.clientX;ty0=t.clientY;},{passive:true});
+document.getElementById('game-wrap').addEventListener('touchend',e=>{
+  if(!grid)return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tx0,dy=t.clientY-ty0;
+  if(Math.abs(dx)<5&&Math.abs(dy)<5)return;
+  if(Math.abs(dx)>Math.abs(dy)) handleDir(dx>0?'right':'left');
+  else handleDir(dy>0?'down':'up');
+},{passive:true});
+
+document.getElementById('ov-btn').addEventListener('click',()=>{
+  document.getElementById('overlay').classList.add('hidden');
+  loadLevel(0); draw();
+});
+
+// 初始
+document.getElementById('overlay').classList.remove('hidden');
+</script>
+</body>
+</html>

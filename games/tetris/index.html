@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>俄罗斯方块</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d001a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#eee;padding:16px}
+h1{font-size:1.8rem;color:#bf5fff;margin-bottom:8px;letter-spacing:2px}
+.wrap{display:flex;gap:16px;align-items:flex-start}
+.side{display:flex;flex-direction:column;gap:12px;min-width:90px}
+.panel{background:#16001a;border:1px solid #bf5fff;border-radius:8px;padding:10px;text-align:center;font-size:.8rem;color:#aaa}
+.panel b{display:block;color:#bf5fff;font-size:1.3rem;margin-top:4px}
+canvas{border:2px solid #bf5fff;border-radius:4px;background:#0a0010;display:block}
+.hint{margin-top:10px;font-size:.75rem;color:#666;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#bf5fff;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#aaa;margin-bottom:20px}
+#overlay button{background:#bf5fff;color:#0d001a;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+.ctrl-row{display:flex;gap:6px;justify-content:center;margin-top:6px}
+button.cb{width:44px;height:44px;background:#16001a;border:1px solid #bf5fff;color:#bf5fff;border-radius:6px;font-size:1.1rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.cb:active{background:#bf5fff;color:#0d001a}
+</style>
+</head>
+<body>
+<h1>🦋 俄罗斯方块</h1>
+<div class="wrap">
+  <div class="side">
+    <div class="panel">分数<b id="score">0</b></div>
+    <div class="panel">最高<b id="best">0</b></div>
+    <div class="panel">级别<b id="lvl">1</b></div>
+    <div class="panel">行数<b id="lines">0</b></div>
+    <div class="panel">下一块<canvas id="preview" width="80" height="80"></canvas></div>
+  </div>
+  <canvas id="c" width="200" height="400"></canvas>
+</div>
+<div class="ctrl-row"><button class="cb" onclick="move(-1,0)">←</button><button class="cb" onclick="rotate()">↺</button><button class="cb" onclick="move(1,0)">→</button></div>
+<div class="ctrl-row"><button class="cb" onclick="drop()">⇓</button></div>
+<p class="hint">方向键移动 | 上键旋转 | 下键加速 | 空格直接落到底</p>
+<div id="overlay">
+  <h2>🦋 俄罗斯</h2>
+  <p>消除最多行，套員加分！</p>
+  <button onclick="startGame()">开始游戏</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var P=document.getElementById('preview'),pctx=P.getContext('2d');
+var COLS=10,ROWS=20,BS=20;
+var SHAPES=[
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  [[1,1,0],[0,1,1]],
+  [[0,1,1],[1,1,0]]
+];
+var COLORS=['#00f5ff','#f7c948','#bf5fff','#ff7043','#4ecdc4','#e94560','#55efc4'];
+var board,cur,curX,curY,next,score,best,lvl,lines,loop,alive;
+best=+localStorage.getItem('tetrisBest')||0;
+document.getElementById('best').textContent=best;
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(-1));
+  score=0;lvl=1;lines=0;alive=true;
+  ['score','lvl','lines'].forEach(function(id){document.getElementById(id).textContent=id==='lvl'?1:0;});
+  next=rndPiece();spawn();
+  clearInterval(loop);loop=setInterval(tick,500);
+}
+function rndPiece(){var i=Math.random()*SHAPES.length|0;return{shape:SHAPES[i],color:COLORS[i]};}
+function spawn(){
+  cur=next;next=rndPiece();
+  curX=Math.floor(COLS/2)-Math.floor(cur.shape[0].length/2);
+  curY=0;
+  drawPreview();
+  if(collide(curX,curY,cur.shape)){alive=false;clearInterval(loop);endGame();}
+}
+function collide(x,y,shape){
+  for(var r=0;r<shape.length;r++)for(var c=0;c<shape[r].length;c++){
+    if(!shape[r][c])continue;
+    var nr=y+r,nc=x+c;
+    if(nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]>-1)return true;
+  }
+  return false;
+}
+function merge(){
+  cur.shape.forEach(function(row,r){row.forEach(function(v,c){
+    if(v)board[curY+r][curX+c]=COLORS.indexOf(cur.color);
+  });});
+}
+function clearLines(){
+  var cleared=0;
+  for(var r=ROWS-1;r>=0;r--){
+    if(board[r].every(function(c){return c>-1;})){
+      board.splice(r,1);board.unshift(Array(COLS).fill(-1));cleared++;r++;
+    }
+  }
+  if(cleared){
+    lines+=cleared;var pts=[0,100,300,500,800][cleared]*lvl;
+    score+=pts;
+    if(score>best){best=score;localStorage.setItem('tetrisBest',best);document.getElementById('best').textContent=best;}
+    lvl=Math.floor(lines/10)+1;
+    document.getElementById('score').textContent=score;
+    document.getElementById('lines').textContent=lines;
+    document.getElementById('lvl').textContent=lvl;
+    clearInterval(loop);loop=setInterval(tick,Math.max(80,500-lvl*40));
+  }
+}
+function tick(){if(!alive)return;if(!collide(curX,curY+1,cur.shape)){curY++;}else{merge();clearLines();spawn();}draw();}
+function move(dx,dy){if(!alive)return;if(!collide(curX+dx,curY+dy||0,cur.shape)){curX+=dx;if(dy)curY+=dy;}draw();}
+function rotate(){
+  if(!alive)return;
+  var s=cur.shape,rs=s[0].map(function(_,i){return s.map(function(r){return r[i];}).reverse();});
+  if(!collide(curX,curY,rs))cur.shape=rs;
+  draw();
+}
+function drop(){
+  if(!alive)return;
+  while(!collide(curX,curY+1,cur.shape))curY++;
+  merge();clearLines();spawn();draw();
+}
+function drawBlock(c2d,x,y,color,size){
+  size=size||BS;
+  c2d.fillStyle=color;c2d.fillRect(x+1,y+1,size-2,size-2);
+  c2d.fillStyle='rgba(255,255,255,0.25)';c2d.fillRect(x+1,y+1,size-2,3);
+  c2d.fillStyle='rgba(0,0,0,0.2)';c2d.fillRect(x+1,y+size-4,size-2,3);
+}
+function draw(){
+  ctx.fillStyle='#0a0010';ctx.fillRect(0,0,COLS*BS,ROWS*BS);
+  // ghost
+  var gy=curY;
+  while(!collide(curX,gy+1,cur.shape))gy++;
+  cur.shape.forEach(function(row,r){row.forEach(function(v,c){
+    if(v){ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect((curX+c)*BS+1,(gy+r)*BS+1,BS-2,BS-2);}
+  });});
+  // board
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)
+    if(board[r][c]>-1)drawBlock(ctx,c*BS,r*BS,COLORS[board[r][c]]);
+  // current
+  cur.shape.forEach(function(row,r){row.forEach(function(v,c){
+    if(v)drawBlock(ctx,(curX+c)*BS,(curY+r)*BS,cur.color);
+  });});
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+  for(var i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(i*BS,0);ctx.lineTo(i*BS,ROWS*BS);ctx.stroke();}
+  for(var j=0;j<=ROWS;j++){ctx.beginPath();ctx.moveTo(0,j*BS);ctx.lineTo(COLS*BS,j*BS);ctx.stroke();}
+}
+function drawPreview(){
+  pctx.fillStyle='#16001a';pctx.fillRect(0,0,80,80);
+  var s=next.shape,pw=s[0].length*16,ph=s.length*16;
+  var ox=(80-pw)/2,oy=(80-ph)/2;
+  s.forEach(function(row,r){row.forEach(function(v,c){
+    if(v)drawBlock(pctx,ox+c*16,oy+r*16,next.color,16);
+  });});
+}
+function endGame(){
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>游戏结束</h2><p>得分：'+score+'　最高：'+best+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+document.addEventListener('keydown',function(e){
+  if(!alive)return;
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){e.preventDefault();move(-1,0);}
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){e.preventDefault();move(1,0);}
+  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){e.preventDefault();move(0,1);}
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key==='z'||e.key==='Z'){e.preventDefault();rotate();}
+  if(e.key===' '){e.preventDefault();drop();}
+});
+</script>
+</body>
+</html>

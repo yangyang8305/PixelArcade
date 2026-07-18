@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>井字棋</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Arial,sans-serif;color:#fff}
+h1{font-size:2rem;margin-bottom:10px;letter-spacing:3px}
+.mode{display:flex;gap:10px;margin-bottom:12px}
+.mode button{padding:8px 18px;border:2px solid rgba(255,255,255,.3);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem}
+.mode button.active{background:rgba(255,255,255,.3);border-color:#fff}
+.status{font-size:1.1rem;margin-bottom:14px;min-height:1.5em;color:#ffd700;font-weight:700;text-align:center}
+#board{display:grid;grid-template-columns:repeat(3,100px);grid-template-rows:repeat(3,100px);gap:8px;margin-bottom:14px}
+.cell{width:100px;height:100px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:3rem;cursor:pointer;transition:background .15s}
+.cell:hover{background:rgba(255,255,255,.18)}
+.cell.x-mark{color:#ef5350}
+.cell.o-mark{color:#42a5f5}
+.cell.win-cell{background:rgba(255,215,0,.2);border-color:#ffd700}
+.btns{display:flex;gap:10px}
+.btns button{padding:10px 28px;border:2px solid rgba(255,255,255,.3);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer;font-size:.9rem}
+.btns button:hover{background:rgba(255,255,255,.25)}
+.scores{display:flex;gap:20px;margin-bottom:10px;font-size:.9rem}
+.scores span b{font-size:1.2rem;color:#ffd700}
+</style>
+</head>
+<body>
+<h1>✖️ 井字棋 ⭕</h1>
+<div class="mode">
+  <button onclick="setMode('pve')" id="m-pve" class="active">🤖 人 VS AI</button>
+  <button onclick="setMode('pvp')" id="m-pvp">👥 双人对战</button>
+</div>
+<div class="scores">
+  <span>X方: <b id="sx">0</b></span>
+  <span>平局: <b id="sd">0</b></span>
+  <span>O方: <b id="so">0</b></span>
+</div>
+<div class="status" id="status">点击开始</div>
+<div id="board"></div>
+<div class="btns">
+  <button onclick="newGame()">新局</button>
+  <button onclick="resetScore()">清除分数</button>
+</div>
+<script>
+var board,turn,over,mode,sx,sd,so;
+sx=0;sd=0;so=0;mode='pve';
+var WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function setMode(m){
+  mode=m;
+  document.getElementById('m-pve').classList.toggle('active',m==='pve');
+  document.getElementById('m-pvp').classList.toggle('active',m==='pvp');
+  newGame();
+}
+function newGame(){
+  board=Array(9).fill(null);turn='X';over=false;
+  status(mode==='pvp'?'X方先手':'你是 X，先手');
+  render();
+}
+function resetScore(){sx=0;sd=0;so=0;upScore();}
+function upScore(){
+  document.getElementById('sx').textContent=sx;
+  document.getElementById('sd').textContent=sd;
+  document.getElementById('so').textContent=so;
+}
+function status(msg){document.getElementById('status').textContent=msg;}
+function click(i){
+  if(over||board[i])return;
+  board[i]=turn;
+  var w=checkWin(board);
+  render(w);
+  if(w){over=true;if(turn==='X')sx++;else so++;upScore();status((mode==='pve'?turn==='X'?'🎉 你赢了！':'AI 赢了！':(turn+'方赢了！'))+ '点击新局再来');return;}
+  if(board.every(Boolean)){over=true;sd++;upScore();status('🤝 平局！点击新局');return;}
+  turn=turn==='X'?'O':'X';
+  if(mode==='pve'&&turn==='O'){status('AI 思考中...');setTimeout(aiMove,300);}
+  else status(mode==='pvp'?turn+'方步位':'你的步位');
+}
+function aiMove(){
+  var best=minimax(board,'O');
+  board[best.idx]='O';
+  var w=checkWin(board);
+  render(w);
+  if(w){over=true;so++;upScore();status('AI 赢了！点击新局');return;}
+  if(board.every(Boolean)){over=true;sd++;upScore();status('🤝 平局！点击新局');return;}
+  turn='X';status('你的步位');
+}
+function minimax(b,player){
+  var w=checkWin(b);
+  if(w){return{score:player==='O'?-10:10};}
+  var empty=b.map(function(v,i){return v?null:i;}).filter(function(v){return v!==null;});
+  if(!empty.length)return{score:0};
+  var moves=[];
+  empty.forEach(function(i){
+    var nb=b.slice();nb[i]=player;
+    var res=minimax(nb,player==='O'?'X':'O');
+    moves.push({idx:i,score:res.score});
+  });
+  return moves.reduce(function(best,m){
+    return player==='O'?(m.score>best.score?m:best):(m.score<best.score?m:best);
+  });
+}
+function checkWin(b){
+  for(var i=0;i<WINS.length;i++){
+    var [a,bb,c]=WINS[i];
+    if(b[a]&&b[a]===b[bb]&&b[a]===b[c])return WINS[i];
+  }
+  return null;
+}
+function render(win){
+  var bd=document.getElementById('board');
+  bd.innerHTML='';
+  for(var i=0;i<9;i++){
+    var cell=document.createElement('div');
+    cell.className='cell'+(board[i]==='X'?' x-mark':board[i]==='O'?' o-mark':'');
+    if(win&&win.includes(i))cell.classList.add('win-cell');
+    cell.textContent=board[i]===null?'':board[i]==='X'?'×':'○';
+    (function(idx){cell.addEventListener('click',function(){click(idx);});  })(i);
+    bd.appendChild(cell);
+  }
+}
+if(!status)window.status=function(){};
+newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#70c5ce'/><stop offset='1' stop-color='#a8dce0'/></linearGradient></defs><rect width='300' height='200' fill='url(#sky)'/>
+<!-- clouds -->
+<ellipse cx='60' cy='50' rx='30' ry='18' fill='rgba(255,255,255,0.8)'/>
+<ellipse cx='90' cy='44' rx='22' ry='14' fill='rgba(255,255,255,0.8)'/>
+<ellipse cx='200' cy='35' rx='25' ry='15' fill='rgba(255,255,255,0.8)'/>
+<!-- pipes -->
+<rect x='180' y='0' width='45' height='80' fill='#5ab552'/><rect x='176' y='56' width='53' height='24' fill='#5ab552'/>
+<rect x='180' y='130' width='45' height='70' fill='#5ab552'/><rect x='176' y='130' width='53' height='24' fill='#5ab552'/>
+<rect x='260' y='0' width='45' height='60' fill='#4a9a40'/><rect x='256' y='36' width='53' height='24' fill='#4a9a40'/>
+<rect x='260' y='115' width='45' height='85' fill='#4a9a40'/><rect x='256' y='115' width='53' height='24' fill='#4a9a40'/>
+<!-- ground -->
+<rect x='0' y='175' width='300' height='25' fill='#ded895'/>
+<rect x='0' y='175' width='300' height='8' fill='#5ab552'/>
+<!-- bird -->
+<circle cx='100' cy='100' r='18' fill='#f5a623'/>
+<ellipse cx='93' cy='106' rx='10' ry='7' fill='#f0841a' transform='rotate(-15,93,106)'/>
+<circle cx='107' cy='94' r='7' fill='#fff'/>
+<circle cx='109' cy='94' r='3.5' fill='#333'/>
+<polygon points='118,100 130,97 130,104' fill='#f5541a'/>
+<text x='150' y='194' font-family='Arial' font-size='13' font-weight='bold' fill='#543847' text-anchor='middle'>🐦 Flappy Bird</text></svg>

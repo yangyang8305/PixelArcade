@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>翔牌配对</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(135deg,#1a237e,#283593);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Arial,sans-serif;color:#fff;padding:16px}
+h1{font-size:1.8rem;margin-bottom:8px;letter-spacing:2px}
+.meta{display:flex;gap:20px;margin-bottom:12px;font-size:.9rem}
+.meta span b{color:#ffeb3b;font-size:1.1rem}
+.diff{display:flex;gap:8px;margin-bottom:12px}
+.diff button{padding:6px 14px;border:2px solid rgba(255,255,255,.4);border-radius:6px;background:rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem}
+.diff button.active,.diff button:hover{background:rgba(255,255,255,.3)}
+#grid{display:grid;gap:8px}
+.card{border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:2rem;background:linear-gradient(135deg,#3949ab,#1e88e5);border:2px solid rgba(255,255,255,.2);transition:transform .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.card:hover{transform:scale(1.05)}
+.card.flipped,.card.matched{background:linear-gradient(135deg,#0d47a1,#1565c0);border-color:rgba(255,255,255,.6)}
+.card.matched{background:linear-gradient(135deg,#1b5e20,#2e7d32);border-color:#a5d6a7}
+.card.back{background:linear-gradient(135deg,#3949ab,#1e88e5)}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#fff;font-size:2.2rem;margin-bottom:10px}
+#overlay p{color:#ccc;margin-bottom:20px;font-size:1rem;text-align:center}
+#overlay button{background:#1e88e5;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin:4px}
+</style>
+</head>
+<body>
+<h1>🃏 翔牌配对</h1>
+<div class="meta">
+  <span>步数: <b id="moves">0</b></span>
+  <span>时间: <b id="timer">0</b>s</span>
+  <span>剩余: <b id="left">0</b></span>
+</div>
+<div class="diff">
+  <button onclick="setup(4)" id="d4">入闳(4x4)</button>
+  <button onclick="setup(6)" id="d6">进阶(6x4)</button>
+  <button onclick="setup(6,true)" id="d8">高手(6x6)</button>
+</div>
+<div id="grid"></div>
+<div id="overlay" style="display:none">
+  <h2 id="ov-h">🎉 完成！</h2>
+  <p id="ov-p"></p>
+  <button onclick="setup(curCols,curBig)">&#x21bb; 再来一局</button>
+</div>
+<script>
+var EMOJIS='🐶🐱🐼🐯🦁🐻🐺🐧🐎🐬��🦀🌟🌵🌷🍂🍕🏆🎵💡🌈🌍🚀🎨';
+var emojis=EMOJIS.match(/./gu);
+var cards,flipped,matched,moves,timerVal,timerInt,curCols,curBig,lock;
+function setup(cols,big){
+  curCols=cols;curBig=big;
+  var rows=big?6:4;
+  var pairs=cols*rows/2;
+  var pool=emojis.slice(0,pairs);
+  var deck=pool.concat(pool);shuffle(deck);
+  cards=deck.map(function(e,i){return{id:i,emoji:e,flipped:false,matched:false};});
+  flipped=[];matched=0;moves=0;timerVal=0;
+  clearInterval(timerInt);
+  timerInt=setInterval(function(){timerVal++;document.getElementById('timer').textContent=timerVal;},1000);
+  document.getElementById('moves').textContent=0;
+  document.getElementById('timer').textContent=0;
+  document.getElementById('left').textContent=pairs;
+  document.getElementById('overlay').style.display='none';
+  ['d4','d6','d8'].forEach(function(id){document.getElementById(id).classList.remove('active');});
+  document.getElementById(big?'d8':cols===4?'d4':'d6').classList.add('active');
+  lock=false;
+  render(cols,rows);
+}
+function render(cols,rows){
+  var g=document.getElementById('grid');
+  var sz=Math.min(Math.floor((Math.min(window.innerWidth-32,440))/cols)-8,80);
+  g.style.gridTemplateColumns='repeat('+cols+','+sz+'px)';
+  g.innerHTML='';
+  cards.forEach(function(card){
+    var el=document.createElement('div');
+    el.className='card'+(card.matched?' matched':card.flipped?' flipped':'');
+    el.style.width=sz+'px';el.style.height=sz+'px';
+    el.textContent=card.flipped||card.matched?card.emoji:'';
+    el.addEventListener('click',function(){flip(card);});
+    g.appendChild(el);
+  });
+}
+function flip(card){
+  if(lock||card.flipped||card.matched)return;
+  card.flipped=true;
+  flipped.push(card);
+  render(curCols,curBig?6:4);
+  if(flipped.length===2){
+    moves++;document.getElementById('moves').textContent=moves;
+    lock=true;
+    setTimeout(function(){
+      if(flipped[0].emoji===flipped[1].emoji){
+        flipped.forEach(function(c){c.matched=true;});
+        matched++;
+        var pairs=curCols*(curBig?6:4)/2;
+        document.getElementById('left').textContent=pairs-matched;
+        if(matched===pairs){clearInterval(timerInt);showWin();}
+      } else {
+        flipped.forEach(function(c){c.flipped=false;});
+      }
+      flipped=[];lock=false;
+      render(curCols,curBig?6:4);
+    },700);
+  }
+}
+function showWin(){
+  document.getElementById('ov-h').textContent='🎉 配对完成！';
+  document.getElementById('ov-p').textContent='用了 '+moves+' 步，'+timerVal+' 秒完成！';
+  document.getElementById('overlay').style.display='flex';
+}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.random()*(i+1)|0;var t=a[i];a[i]=a[j];a[j]=t;}}
+setup(4,false);
+</script>
+</body>
+</html>

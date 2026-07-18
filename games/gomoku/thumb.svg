@@ -1,0 +1,17 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='300' height='200' fill='#1a0f00'/><rect x='10' y='10' width='280' height='165' rx='3' fill='#c8960c'/>
+<!-- grid -->
+<line x1='30' y1='30' x2='270' y2='30' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='30' y1='60' x2='270' y2='60' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='30' y1='90' x2='270' y2='90' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='30' y1='120' x2='270' y2='120' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='30' y1='150' x2='270' y2='150' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='30' y1='30' x2='30' y2='160' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='90' y1='30' x2='90' y2='160' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='150' y1='30' x2='150' y2='160' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='210' y1='30' x2='210' y2='160' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<line x1='270' y1='30' x2='270' y2='160' stroke='rgba(0,0,0,0.35)' stroke-width='1'/>
+<!-- black pieces -->
+<circle cx='90' cy='90' r='13' fill='#111'/><circle cx='150' cy='90' r='13' fill='#111'/><circle cx='120' cy='60' r='13' fill='#111'/><circle cx='180' cy='120' r='13' fill='#111'/>
+<!-- white pieces -->
+<circle cx='210' cy='90' r='13' fill='#eee' stroke='#999' stroke-width='1'/><circle cx='150' cy='120' r='13' fill='#eee' stroke='#999' stroke-width='1'/><circle cx='90' cy='60' r='13' fill='#eee' stroke='#999' stroke-width='1'/>
+<text x='150' y='192' font-family='Arial' font-size='14' font-weight='bold' fill='#f0c060' text-anchor='middle'>⛹️ 五子棋</text></svg>

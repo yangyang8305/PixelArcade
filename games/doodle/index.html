@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>涂鸦跳跳</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0e8d0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;overflow:hidden}
+.ui{display:flex;gap:20px;margin-bottom:8px;font-size:1rem;font-weight:700;color:#555}
+canvas{display:block;border:2px solid #ccc;background:#fffdf5;border-radius:4px}
+.ctrl{display:flex;gap:8px;margin-top:10px}
+.ctrl button{width:56px;height:44px;border:2px solid #aaa;border-radius:6px;background:#fff;font-size:1.4rem;cursor:pointer;}
+.ctrl button:active{background:#eee}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#fff;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#eee;margin-bottom:20px}
+#overlay button{background:#4caf50;color:#fff;border:none;padding:12px 36px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="ui"><span>得分: <b id="sc">0</b></span><span>最高: <b id="bs">0</b></span></div>
+<canvas id="c" width="320" height="480"></canvas>
+<div class="ctrl">
+  <button id="bl">←</button>
+  <button id="br">→</button>
+</div>
+<div id="overlay">
+  <h2>🐦 涂鸦跳跳</h2>
+  <p>不断向上跳，不要掉下去！</p>
+  <button onclick="start()">开始</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var W=320,H=480,PW=50,PH=12,PLAT_CNT=10;
+var player,platforms,score,best,vy,camY,alive,raf;
+best=+localStorage.getItem('doodleBest')||0;
+document.getElementById('bs').textContent=best;
+var keys={};
+document.addEventListener('keydown',function(e){keys[e.key]=true;});
+document.addEventListener('keyup',function(e){keys[e.key]=false;});
+document.getElementById('bl').addEventListener('touchstart',function(){keys['ArrowLeft']=true;},{passive:true});
+document.getElementById('bl').addEventListener('touchend',function(){keys['ArrowLeft']=false;},{passive:true});
+document.getElementById('br').addEventListener('touchstart',function(){keys['ArrowRight']=true;},{passive:true});
+document.getElementById('br').addEventListener('touchend',function(){keys['ArrowRight']=false;},{passive:true});
+function makePlatforms(){
+  var ps=[];
+  ps.push({x:W/2-PW/2,y:H-60,w:PW,type:'normal'});
+  for(var i=1;i<PLAT_CNT;i++){
+    ps.push({x:Math.random()*(W-PW),y:H-60-i*(H/PLAT_CNT),w:PW,type:'normal'});
+  }
+  return ps;
+}
+function start(){
+  document.getElementById('overlay').style.display='none';
+  player={x:W/2-15,y:H-80,w:30,h:30};
+  platforms=makePlatforms();
+  vy=-12;score=0;camY=0;alive=true;
+  document.getElementById('sc').textContent=0;
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+function loop(){update();draw();raf=requestAnimationFrame(loop);}
+function update(){
+  if(!alive)return;
+  // move
+  var spd=5;
+  if(keys['ArrowLeft']||keys['a']||keys['A'])player.x-=spd;
+  if(keys['ArrowRight']||keys['d']||keys['D'])player.x+=spd;
+  // wrap
+  if(player.x+player.w<0)player.x=W;
+  if(player.x>W)player.x=-player.w;
+  // gravity
+  vy+=0.4;
+  player.y+=vy;
+  // platform collision (falling only)
+  if(vy>0){
+    platforms.forEach(function(p){
+      if(player.x+player.w>p.x&&player.x<p.x+p.w&&
+         player.y+player.h>p.y+camY&&player.y+player.h<p.y+camY+PH+10){
+        vy=-13;
+      }
+    });
+  }
+  // camera scroll up
+  var mid=player.y-camY;
+  if(mid<H/2){
+    var diff=H/2-mid;
+    camY-=diff;
+    score+=Math.round(diff/5);
+    document.getElementById('sc').textContent=score;
+    if(score>best){best=score;localStorage.setItem('doodleBest',best);document.getElementById('bs').textContent=best;}
+    // move platforms down (scroll)
+    platforms.forEach(function(p){p.y+=diff;});
+  }
+  // spawn new platforms at top
+  platforms=platforms.filter(function(p){return p.y+camY<H+20;});
+  while(platforms.length<PLAT_CNT){
+    var last=platforms.reduce(function(a,b){return a.y<b.y?a:b;},{y:999});
+    platforms.push({x:Math.random()*(W-PW),y:last.y-(40+Math.random()*50),w:PW,type:'normal'});
+  }
+  // die
+  if(player.y-camY>H+60)die();
+}
+function die(){
+  alive=false;
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>💥 掉下去了</h2><p>得分：'+score+'　最高：'+best+'</p><button onclick="start()">再来一局</button>';
+  ov.style.display='flex';
+}
+function draw(){
+  ctx.fillStyle='#fffdf5';ctx.fillRect(0,0,W,H);
+  // platforms
+  platforms.forEach(function(p){
+    var py=p.y+camY;
+    ctx.fillStyle='#4caf50';
+    ctx.beginPath();ctx.roundRect(p.x,py,p.w,PH,4);ctx.fill();
+    ctx.fillStyle='#81c784';
+    ctx.fillRect(p.x+4,py+2,p.w-8,4);
+  });
+  // player (little doodle bird)
+  ctx.fillStyle='#f5a623';
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle='#fff';
+  ctx.fillRect(player.x+6,player.y+6,8,8);
+  ctx.fillRect(player.x+player.w-14,player.y+6,8,8);
+  ctx.fillStyle='#333';
+  ctx.fillRect(player.x+8,player.y+8,4,4);
+  ctx.fillRect(player.x+player.w-12,player.y+8,4,4);
+  ctx.fillStyle='#f55';
+  ctx.fillRect(player.x+10,player.y+18,10,4);
+}
+</script>
+</body>
+</html>
