@@ -2,6 +2,7 @@
 <!-- 绑定自定义域名后，把 https://yangyang8305.github.io/PixelArcade/ 全局替换成你的域名 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://yangyang8305.github.io/PixelArcade/</loc><priority>1.0</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=gemcrush</loc><priority>0.8</priority></url>
   <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=pacman</loc><priority>0.8</priority></url>
   <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=snake</loc><priority>0.8</priority></url>
   <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=tetris</loc><priority>0.8</priority></url>

@@ -1,6 +1,19 @@
 // PixelArcade — Games Database
 const GAMES = [
   {
+    id: 'gemcrush',
+    name: 'Gem Crush',
+    category: 'puzzle',
+    emoji: '💎',
+    rating: 4.7,
+    plays: 1200,
+    badge: 'new',
+    url: 'games/gemcrush/index.html',
+    thumb: 'games/gemcrush/thumb.svg',
+    desc: 'Swap gems and match 3 or more. Chain combos for big scores before your moves run out!',
+    tags: ['puzzle','match3','casual']
+  },
+  {
     id: 'pacman',
     name: 'Pac-Man',
     category: 'arcade',
