@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五子棋</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a0f00;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;padding:16px}
+h1{font-size:1.8rem;color:#f0c060;margin-bottom:8px;letter-spacing:2px}
+.info{display:flex;gap:16px;margin-bottom:10px;font-size:.9rem;color:#eee}
+.info span{background:#2a1a00;padding:5px 14px;border-radius:20px}
+.info b{color:#f0c060}
+canvas{border:2px solid #8b6914;border-radius:4px;cursor:crosshair;display:block;touch-action:none}
+.hint{margin-top:10px;font-size:.78rem;color:#888;text-align:center}
+#msg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);align-items:center;justify-content:center;flex-direction:column;z-index:10}
+#msg h2{color:#f0c060;font-size:2rem;margin-bottom:16px}
+#msg button{background:#f0c060;color:#1a0f00;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>⛹️ 五子棋</h1>
+<div class="info">
+  <span id="turn-info">现在走棋：<b>黑棋</b></span>
+  <span>黑棋胜 <b id="bw">0</b></span>
+  <span>白棋胜 <b id="ww">0</b></span>
+</div>
+<canvas id="c"></canvas>
+<p class="hint">点击落子 | 人机对战：黑棋为人，白棋为 AI</p>
+<div id="msg"><h2 id="msg-text"></h2><button onclick="newGame()">再来一局</button></div>
+<script>
+var GRID=15,GAP=32,PAD=24;
+var SIZE=GAP*(GRID-1)+PAD*2;
+var C=document.getElementById('c');
+C.width=C.height=SIZE;
+var ctx=C.getContext('2d');
+var board,turn,bw=0,ww=0,over;
+function newGame(){
+  document.getElementById('msg').style.display='none';
+  board=Array.from({length:GRID},()=>Array(GRID).fill(0));
+  turn=1;over=false;
+  document.getElementById('turn-info').innerHTML='现在走棋：<b>黑棋</b>';
+  draw();
+}
+function draw(){
+  ctx.fillStyle='#c8960c';ctx.fillRect(0,0,SIZE,SIZE);
+  // wood grain
+  for(var i=0;i<GRID;i++){
+    ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD+i*GAP,PAD);ctx.lineTo(PAD+i*GAP,SIZE-PAD);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PAD,PAD+i*GAP);ctx.lineTo(SIZE-PAD,PAD+i*GAP);ctx.stroke();
+  }
+  // star points
+  var stars=[[3,3],[3,11],[11,3],[11,11],[7,7]];
+  stars.forEach(function(s){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.arc(PAD+s[0]*GAP,PAD+s[1]*GAP,3,0,Math.PI*2);ctx.fill();});
+  // pieces
+  for(var r=0;r<GRID;r++)for(var c=0;c<GRID;c++){
+    if(!board[r][c])continue;
+    var x=PAD+c*GAP,y=PAD+r*GAP,isB=board[r][c]===1;
+    var g=ctx.createRadialGradient(x-4,y-4,2,x,y,GAP/2-2);
+    if(isB){g.addColorStop(0,'#555');g.addColorStop(1,'#000');}
+    else{g.addColorStop(0,'#fff');g.addColorStop(1,'#bbb');}
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(x,y,GAP/2-2,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=isB?'#333':'#999';ctx.lineWidth=.5;ctx.stroke();
+  }
+}
+function rc(evt){
+  var rect=C.getBoundingClientRect();
+  var scaleX=SIZE/rect.width,scaleY=SIZE/rect.height;
+  var ex=(evt.clientX||evt.touches[0].clientX)-rect.left;
+  var ey=(evt.clientY||evt.touches[0].clientY)-rect.top;
+  var c=Math.round((ex*scaleX-PAD)/GAP);
+  var r=Math.round((ey*scaleY-PAD)/GAP);
+  return [r,c];
+}
+function place(r,c,who){
+  if(r<0||r>=GRID||c<0||c>=GRID||board[r][c])return false;
+  board[r][c]=who;return true;
+}
+function check(r,c,who){
+  var dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(var d=0;d<dirs.length;d++){
+    var cnt=1,dr=dirs[d][0],dc=dirs[d][1];
+    for(var s=1;s<5;s++){var nr=r+dr*s,nc=c+dc*s;if(nr<0||nr>=GRID||nc<0||nc>=GRID||board[nr][nc]!==who)break;cnt++;}
+    for(var s=1;s<5;s++){var nr=r-dr*s,nc=c-dc*s;if(nr<0||nr>=GRID||nc<0||nc>=GRID||board[nr][nc]!==who)break;cnt++;}
+    if(cnt>=5)return true;
+  }
+  return false;
+}
+// Simple AI: score each empty cell
+function aiMove(){
+  var best=-1,br=7,bc=7;
+  for(var r=0;r<GRID;r++)for(var c=0;c<GRID;c++){
+    if(board[r][c])continue;
+    var s=scoreCell(r,c,2)+scoreCell(r,c,1)*0.9;
+    if(s>best){best=s;br=r;bc=c;}
+  }
+  return[br,bc];
+}
+function scoreCell(r,c,who){
+  var dirs=[[1,0],[0,1],[1,1],[1,-1]];var total=0;
+  for(var d=0;d<dirs.length;d++){
+    var cnt=1,open=0,dr=dirs[d][0],dc=dirs[d][1];
+    for(var s=1;s<5;s++){var nr=r+dr*s,nc=c+dc*s;if(nr<0||nr>=GRID||nc<0||nc>=GRID)break;if(board[nr][nc]===who)cnt++;else{if(!board[nr][nc])open++;break;}}
+    for(var s=1;s<5;s++){var nr=r-dr*s,nc=c-dc*s;if(nr<0||nr>=GRID||nc<0||nc>=GRID)break;if(board[nr][nc]===who)cnt++;else{if(!board[nr][nc])open++;break;}}
+    var sc=cnt>=5?100000:cnt===4?open?10000:100:cnt===3?open?500:10:cnt===2?open?50:2:open?1:0;
+    total+=sc;
+  }
+  return total;
+}
+C.addEventListener('click',function(e){playerMove(rc(e));});
+C.addEventListener('touchend',function(e){e.preventDefault();playerMove(rc(e));},{passive:false});
+function playerMove(pos){
+  if(over||turn!==1)return;
+  var r=pos[0],c=pos[1];
+  if(!place(r,c,1))return;
+  draw();
+  if(check(r,c,1)){bw++;document.getElementById('bw').textContent=bw;showWin('黑棋获胜！🎉');return;}
+  turn=2;
+  document.getElementById('turn-info').innerHTML='现在走棋：<b>白棋 (AI)</b>';
+  setTimeout(function(){
+    var pos=aiMove();place(pos[0],pos[1],2);draw();
+    if(check(pos[0],pos[1],2)){ww++;document.getElementById('ww').textContent=ww;showWin('AI 白棋获胜！');return;}
+    turn=1;document.getElementById('turn-info').innerHTML='现在走棋：<b>黑棋</b>';
+  },200);
+}
+function showWin(t){over=true;document.getElementById('msg-text').textContent=t;document.getElementById('msg').style.display='flex';}
+newGame();
+</script>
+</body>
+</html>

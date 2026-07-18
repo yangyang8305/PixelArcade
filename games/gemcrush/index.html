@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宝石消消乐 Gem Crush</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#eee;padding:20px}
+h1{font-size:2rem;margin-bottom:10px;color:#e94560;letter-spacing:2px}
+.info{display:flex;gap:14px;margin-bottom:14px;font-size:1rem;flex-wrap:wrap;justify-content:center}
+.info span{background:#16213e;padding:6px 18px;border-radius:20px}
+.info b{color:#e94560}
+canvas{border:2px solid #e94560;border-radius:4px;background:#0f3460;display:block;width:min(92vw,420px);height:min(92vw,420px);touch-action:none}
+.combo{height:22px;margin-top:8px;font-size:.95rem;color:#ffd166;font-weight:bold;letter-spacing:1px}
+.controls{margin-top:8px}
+.controls button{background:#16213e;border:1px solid #e94560;color:#e94560;border-radius:6px;padding:8px 22px;font-size:.95rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.controls button:active{background:#e94560;color:#fff}
+.hint{margin-top:10px;font-size:.8rem;color:#888;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay.show{display:flex}
+#overlay h2{color:#e94560;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#eee;margin-bottom:20px}
+#overlay button{background:#e94560;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>💎 宝石消消乐</h1>
+<div class="info">
+  <span>分数 <b id="score">0</b></span>
+  <span>最高 <b id="best">0</b></span>
+  <span>步数 <b id="moves">25</b></span>
+</div>
+<canvas id="cv" width="400" height="400"></canvas>
+<div class="combo" id="combo"></div>
+<div class="controls"><button id="restartBtn">重新开始</button></div>
+<p class="hint">点击或拖动相邻宝石交换位置，凑齐 3 个同色即可消除<br>连锁消除有加倍奖励！</p>
+
+<div id="overlay">
+  <h2>游戏结束</h2>
+  <p>最终分数：<span id="finalScore">0</span></p>
+  <button id="againBtn">再来一局</button>
+</div>
+
+<script>
+const SIZE = 8, CS = 50;               // 8×8 格，每格 50px（画布内部坐标）
+const START_MOVES = 25;
+const COLORS = ['#e94560','#00b8d9','#ffd166','#06d6a0','#b388ff','#ff8f5c'];
+const SHAPES = ['circle','diamond','square','triangle','hex','star']; // 每色配形状，色弱也能玩
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const scoreEl = document.getElementById('score');
+const bestEl = document.getElementById('best');
+const movesEl = document.getElementById('moves');
+const comboEl = document.getElementById('combo');
+const overlay = document.getElementById('overlay');
+const finalEl = document.getElementById('finalScore');
+
+let board = [];        // board[r][c] = gem 对象或 null
+let score = 0, moves = START_MOVES, combo = 0;
+let best = +localStorage.getItem('gemcrush_best') || 0;
+let phase = 'idle';    // idle | swap | resolve | over
+let swapInfo = null;
+let selected = null;
+let dragStart = null;
+let comboTimer = 0;
+let revived = false;
+
+bestEl.textContent = best;
+
+function makeGem(color, r, c, spawnAbove) {
+  return { color, x: c*CS, y: spawnAbove ? -CS*(spawnAbove) : r*CS, scale: 1, dying: false };
+}
+
+// ── 纯颜色矩阵上的逻辑判断 ──
+function colorGrid() {
+  return board.map(row => row.map(g => g ? g.color : -1));
+}
+function findMatchesIn(grid) {
+  const hit = new Set();
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const v = grid[r][c];
+    if (v < 0) continue;
+    if (c <= SIZE-3 && grid[r][c+1] === v && grid[r][c+2] === v) {
+      let k = c; while (k < SIZE && grid[r][k] === v) { hit.add(r+','+k); k++; }
+    }
+    if (r <= SIZE-3 && grid[r+1][c] === v && grid[r+2][c] === v) {
+      let k = r; while (k < SIZE && grid[k][c] === v) { hit.add(k+','+c); k++; }
+    }
+  }
+  return [...hit].map(s => s.split(',').map(Number));
+}
+function hasMoveIn(grid) {
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    if (c < SIZE-1) {
+      [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
+      const ok = findMatchesIn(grid).length > 0;
+      [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
+      if (ok) return true;
+    }
+    if (r < SIZE-1) {
+      [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
+      const ok = findMatchesIn(grid).length > 0;
+      [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
+      if (ok) return true;
+    }
+  }
+  return false;
+}
+function randColorAt(grid, r, c) {
+  let v;
+  do { v = Math.floor(Math.random()*COLORS.length); }
+  while ((c >= 2 && grid[r][c-1] === v && grid[r][c-2] === v) ||
+         (r >= 2 && grid[r-1][c] === v && grid[r-2][c] === v));
+  return v;
+}
+function newBoard() {
+  let grid;
+  do {
+    grid = Array.from({length:SIZE}, () => Array(SIZE).fill(-1));
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++)
+      grid[r][c] = randColorAt(grid, r, c);
+  } while (!hasMoveIn(grid));
+  board = grid.map((row, r) => row.map((v, c) => makeGem(v, r, c)));
+}
+function reshuffle() {
+  const grid = colorGrid();
+  let flat = grid.flat();
+  let tries = 0;
+  do {
+    for (let i = flat.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [flat[i], flat[j]] = [flat[j], flat[i]];
+    }
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) grid[r][c] = flat[r*SIZE+c];
+    if (++tries > 60) { newBoard(); return; }   // 极端情况直接重开盘面
+  } while (findMatchesIn(grid).length > 0 || !hasMoveIn(grid));
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) board[r][c].color = grid[r][c];
+  showCombo('无可消除，已重排！');
+}
+
+// ── 绘制 ──
+function drawShape(g, cx, cy, rad) {
+  ctx.fillStyle = COLORS[g.color];
+  ctx.strokeStyle = 'rgba(255,255,255,.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  switch (SHAPES[g.color]) {
+    case 'circle': ctx.arc(cx, cy, rad, 0, Math.PI*2); break;
+    case 'diamond':
+      ctx.moveTo(cx, cy-rad); ctx.lineTo(cx+rad, cy); ctx.lineTo(cx, cy+rad); ctx.lineTo(cx-rad, cy);
+      ctx.closePath(); break;
+    case 'square': ctx.rect(cx-rad*.82, cy-rad*.82, rad*1.64, rad*1.64); break;
+    case 'triangle':
+      ctx.moveTo(cx, cy-rad); ctx.lineTo(cx+rad*.95, cy+rad*.75); ctx.lineTo(cx-rad*.95, cy+rad*.75);
+      ctx.closePath(); break;
+    case 'hex':
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI/3*i - Math.PI/6;
+        ctx[i ? 'lineTo' : 'moveTo'](cx+rad*Math.cos(a), cy+rad*Math.sin(a));
+      }
+      ctx.closePath(); break;
+    case 'star':
+      for (let i = 0; i < 10; i++) {
+        const a = Math.PI/5*i - Math.PI/2, rr = i%2 ? rad*.45 : rad;
+        ctx[i ? 'lineTo' : 'moveTo'](cx+rr*Math.cos(a), cy+rr*Math.sin(a));
+      }
+      ctx.closePath(); break;
+  }
+  ctx.fill(); ctx.stroke();
+}
+function draw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = 'rgba(255,255,255,.03)';
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++)
+    if ((r+c)%2) ctx.fillRect(c*CS, r*CS, CS, CS);
+  if (selected) {
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    ctx.fillRect(selected[1]*CS, selected[0]*CS, CS, CS);
+  }
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const g = board[r][c];
+    if (!g) continue;
+    drawShape(g, g.x+CS/2, g.y+CS/2, CS*0.38*g.scale);
+  }
+}
+
+// ── 动画驱动 ──
+let lastT = 0;
+function tick(t) {
+  const dt = Math.min(t - lastT, 50); lastT = t;
+  let busy = false;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const g = board[r][c];
+    if (!g) { busy = true; continue; }
+    if (g.dying) {
+      g.scale -= dt*0.006;
+      if (g.scale > 0) busy = true;
+      continue;
+    }
+    const tx = c*CS, ty = r*CS, sp = 0.45*dt;
+    if (g.x !== tx) { g.x += Math.sign(tx-g.x)*Math.min(sp, Math.abs(tx-g.x)); busy = true; }
+    if (g.y !== ty) { g.y += Math.sign(ty-g.y)*Math.min(sp, Math.abs(ty-g.y)); busy = true; }
+  }
+  if (!busy) {
+    if (phase === 'swap') settleSwap();
+    else if (phase === 'resolve') settleResolve();
+  }
+  if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) comboEl.textContent = ''; }
+  draw();
+  requestAnimationFrame(tick);
+}
+
+// ── 交换与消除流程 ──
+function trySwap(a, b) {
+  if (phase !== 'idle') return;
+  selected = null;
+  swapInfo = { a, b, reverted: false };
+  doSwap(a, b);
+  phase = 'swap';
+}
+function doSwap(a, b) {
+  const t = board[a[0]][a[1]];
+  board[a[0]][a[1]] = board[b[0]][b[1]];
+  board[b[0]][b[1]] = t;
+}
+function settleSwap() {
+  const matches = findMatchesIn(colorGrid());
+  if (matches.length) {
+    moves--; movesEl.textContent = moves;
+    combo = 0;
+    swapInfo = null;
+    clearMatches(matches);
+  } else if (!swapInfo.reverted) {
+    swapInfo.reverted = true;
+    doSwap(swapInfo.a, swapInfo.b);   // 无效交换：换回去
+  } else {
+    swapInfo = null;
+    phase = 'idle';
+  }
+}
+function clearMatches(matches) {
+  combo++;
+  const gain = matches.length * 10 * combo;
+  score += gain;
+  scoreEl.textContent = score;
+  if (combo > 1) showCombo(`连锁 ×${combo}！ +${gain}`);
+  matches.forEach(([r, c]) => { board[r][c].dying = true; });
+  phase = 'resolve';
+}
+function settleResolve() {
+  let removed = false;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++)
+    if (board[r][c] && board[r][c].dying) { board[r][c] = null; removed = true; }
+  if (removed) {
+    // 掉落 + 顶部补新
+    for (let c = 0; c < SIZE; c++) {
+      const col = [];
+      for (let r = SIZE-1; r >= 0; r--) if (board[r][c]) col.push(board[r][c]);
+      let spawn = 0;
+      for (let r = SIZE-1; r >= 0; r--) {
+        if (col.length) board[r][c] = col.shift();
+        else board[r][c] = makeGem(Math.floor(Math.random()*COLORS.length), r, c, ++spawn);
+      }
+    }
+    return;  // 等宝石落定后再回到本函数
+  }
+  const matches = findMatchesIn(colorGrid());
+  if (matches.length) { clearMatches(matches); return; }
+  if (moves <= 0) { gameOver(); return; }
+  if (!hasMoveIn(colorGrid())) reshuffle();
+  phase = 'idle';
+}
+function showCombo(msg) { comboEl.textContent = msg; comboTimer = 1400; }
+
+// ── 结束 / 复活 ──
+function gameOver() {
+  phase = 'over';
+  if (score > best) { best = score; localStorage.setItem('gemcrush_best', best); bestEl.textContent = best; }
+  finalEl.textContent = score;
+  overlay.classList.add('show');
+  // 通知宿主页面（PixelArcade 游戏页会弹"看广告复活"）；首次结束才给复活机会
+  if (window.parent !== window && !revived) {
+    parent.postMessage('gameover', '*');
+  }
+}
+window.addEventListener('message', e => {
+  if (e.data === 'revive' && phase === 'over' && !revived) {
+    revived = true;
+    moves = 10; movesEl.textContent = moves;
+    overlay.classList.remove('show');
+    showCombo('复活成功！+10 步');
+    phase = 'idle';
+  }
+});
+
+function restart() {
+  score = 0; moves = START_MOVES; combo = 0; revived = false;
+  scoreEl.textContent = 0; movesEl.textContent = moves; comboEl.textContent = '';
+  overlay.classList.remove('show');
+  selected = null;
+  newBoard();
+  phase = 'idle';
+}
+document.getElementById('restartBtn').addEventListener('click', restart);
+document.getElementById('againBtn').addEventListener('click', restart);
+
+// ── 输入：点选或拖动 ──
+function cellAt(e) {
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width * cv.width;
+  const y = (e.clientY - rect.top) / rect.height * cv.height;
+  const c = Math.floor(x/CS), r = Math.floor(y/CS);
+  if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return null;
+  return [r, c];
+}
+function adjacent(a, b) { return Math.abs(a[0]-b[0]) + Math.abs(a[1]-b[1]) === 1; }
+
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (phase !== 'idle') return;
+  const cell = cellAt(e);
+  if (!cell) return;
+  dragStart = { cell, x: e.clientX, y: e.clientY };
+  if (selected && adjacent(selected, cell)) trySwap(selected, cell);
+  else selected = cell;
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragStart || phase !== 'idle') return;
+  const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+  const rect = cv.getBoundingClientRect();
+  const th = rect.width / SIZE * 0.4;
+  if (Math.abs(dx) < th && Math.abs(dy) < th) return;
+  const [r, c] = dragStart.cell;
+  const target = Math.abs(dx) > Math.abs(dy)
+    ? [r, c + Math.sign(dx)] : [r + Math.sign(dy), c];
+  dragStart = null;
+  if (target[0] >= 0 && target[0] < SIZE && target[1] >= 0 && target[1] < SIZE)
+    trySwap([r, c], target);
+});
+cv.addEventListener('pointerup', () => { dragStart = null; });
+
+newBoard();
+requestAnimationFrame(t => { lastT = t; tick(t); });
+</script>
+</body>
+</html>

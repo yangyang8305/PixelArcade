@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" id="metaDesc" content="Play free games on PixelArcade.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
 <title id="pageTitle">Game — PixelArcade</title>
 <link rel="stylesheet" href="../assets/css/main.css">
 <link rel="stylesheet" href="../assets/css/game.css">
@@ -66,7 +67,7 @@
       </div>
 
       <div class="section-header">
-        <h2 class="section-title">🎮 More Games</h2>
+        <h2 class="section-title" data-i18n="section.more">🎮 More Games</h2>
       </div>
       <div class="related-games" id="relatedGames"></div>
     </div>
@@ -128,38 +129,82 @@
     return;
   }
 
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
   // Dynamic title + meta description for SEO
   document.title = game.name + ' — PixelArcade';
   document.getElementById('metaDesc').setAttribute('content',
     game.desc + ' Play free on PixelArcade.');
 
+  // Structured data for search engines
+  const ld = document.createElement('script');
+  ld.type = 'application/ld+json';
+  ld.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: game.name,
+    description: game.desc,
+    genre: game.category,
+    playMode: 'SinglePlayer',
+    applicationCategory: 'Game',
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: game.rating, bestRating: 5, ratingCount: game.plays
+    }
+  });
+  document.head.appendChild(ld);
+
   document.getElementById('gameTitle').textContent = game.name;
   document.getElementById('gameDesc').textContent = game.desc;
-  document.getElementById('gameFrame').src = game.url;
+
+  // Game URLs are relative to the site root (games/<id>/index.html);
+  // this page lives in pages/, so hop one level up for local games.
+  const gameSrc = /^https?:\/\//.test(game.url) ? game.url : '../' + game.url;
+  const frame = document.getElementById('gameFrame');
+  frame.src = gameSrc;
+  frame.title = game.name;
+
   document.getElementById('gameTags').innerHTML =
-    game.tags.map(t => `<span class="game-tag">${t}</span>`).join('');
+    game.tags.map(t => `<span class="game-tag">${esc(t)}</span>`).join('');
 
-  // Derive allowed origin from game URL for postMessage security
+  // Derive allowed origin (resolves relative URLs against this page)
   let gameOrigin = '*';
-  try { gameOrigin = new URL(game.url).origin; } catch(e) {}
+  try { gameOrigin = new URL(gameSrc, location.href).origin; } catch(e) {}
 
-  // Fullscreen
+  // Remember for the home page's "Recently Played" row
+  try {
+    const recent = JSON.parse(localStorage.getItem('pa_recent') || '[]')
+      .filter(id => id !== game.id);
+    recent.unshift(game.id);
+    localStorage.setItem('pa_recent', JSON.stringify(recent.slice(0, 12)));
+  } catch(e) {}
+
+  // Fullscreen (with WebKit fallback for Safari)
   document.getElementById('fsBtn').addEventListener('click', () => {
     const wrap = document.getElementById('playerWrap');
     if (wrap.requestFullscreen) wrap.requestFullscreen();
+    else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen();
   });
 
   // Related games (use addEventListener, not inline onclick)
   const related = GAMES.filter(g => g.category === game.category && g.id !== game.id).slice(0, 6);
   const relatedContainer = document.getElementById('relatedGames');
   related.forEach(g => {
+    const thumb = g.thumb
+      ? `<img class="game-thumb-img" src="../${esc(g.thumb)}" alt="${esc(g.name)}" loading="lazy" onerror="this.remove()">`
+      : '';
     const card = document.createElement('div');
     card.className = 'game-card';
+    card.dataset.cat = g.category;
     card.innerHTML = `
-      <div class="game-thumb-placeholder" style="font-size:32px">${g.emoji}</div>
+      <div class="game-thumb-placeholder" style="font-size:32px"><span>${g.emoji}</span>${thumb}</div>
       <div class="game-info">
-        <div class="game-name">${g.name}</div>
-        <div class="game-meta"><span class="game-cat">${g.category}</span></div>
+        <div class="game-name">${esc(g.name)}</div>
+        <div class="game-meta"><span class="game-cat">${esc(g.category)}</span></div>
       </div>`;
     card.addEventListener('click', () => {
       location.href = 'game.html?id=' + encodeURIComponent(g.id);
@@ -187,7 +232,7 @@
   window.addEventListener('message', e => {
     // Only accept messages from the game's own origin
     if (gameOrigin !== '*' && e.origin !== gameOrigin) return;
-    if (e.data === 'gameover' || e.data === 'pause') showRewardedAd();
+    if (e.data === 'gameover') showRewardedAd();
   });
 
   function showRewardedAd() {

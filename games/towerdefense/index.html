@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小行星防御</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;font-family:Arial,sans-serif;color:#eee;padding:8px}
+h1{font-size:1.4rem;margin-bottom:6px;color:#a78bfa;letter-spacing:2px}
+.top{display:flex;gap:12px;margin-bottom:6px;font-size:.85rem;flex-wrap:wrap;justify-content:center}
+.top span b{color:#ffd700}
+.shop{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;justify-content:center}
+.shop button{padding:6px 10px;border:2px solid #4c1d95;border-radius:6px;background:#2d1b69;color:#c4b5fd;font-size:.78rem;font-weight:700;cursor:pointer}
+.shop button.sel{border-color:#a78bfa;background:#4c1d95;color:#fff}
+.shop button:hover{background:#3d2080}
+canvas{display:block;border:2px solid #4c1d95;border-radius:4px;cursor:crosshair}
+.hint{margin-top:6px;font-size:.72rem;color:#666;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#a78bfa;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#ccc;margin-bottom:20px;text-align:center}
+#overlay button{background:#4c1d95;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin:4px}
+</style>
+</head>
+<body>
+<h1>🌌 小行星防御</h1>
+<div class="top">
+  <span>金币: <b id="gold">150</b></span>
+  <span>生命: <b id="lives">20</b></span>
+  <span>得分: <b id="score">0</b></span>
+  <span>波段: <b id="wave">1</b></span>
+</div>
+<div class="shop">
+  <button onclick="selTower('basic')" id="t-basic">🟡 射手(费用50)</button>
+  <button onclick="selTower('ice')" id="t-ice">❄️ 冰冻(费用80)</button>
+  <button onclick="selTower('bomb')" id="t-bomb">💥 炮弹(费用120)</button>
+  <button onclick="startWave()" id="btn-wave" style="background:#1b5e20;border-color:#2e7d32;color:#a5d6a7">派出敌军</button>
+</div>
+<canvas id="c" width="480" height="360"></canvas>
+<p class="hint">点击道路旁的平地放塔 | 敌军从左进入右边离开</p>
+<div id="overlay">
+  <h2>🌌 小行星防御</h2>
+  <p>放置防御塔，阻止外星人到达基地！<br>黑色方格 = 可建塔，灰色 = 敌军路径</p>
+  <button onclick="initGame()">&#x25b6; 开始防御</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var W=480,H=360,CELL=30,COLS=W/CELL,ROWS=H/CELL;
+// path: snake across map (col,row)
+var PATH=[
+  [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],
+  [8,3],[8,4],[8,5],[8,6],[8,7],[8,8],[8,9],
+  [7,9],[6,9],[5,9],[4,9],[3,9],[2,9],[1,9],
+  [1,8],[1,7],[1,6],[1,5],[1,4],[1,3],
+  // col1 back up then cross
+  [2,3],[3,3],[4,3],[5,3],[6,3],[7,3],
+  [7,4],[7,5],[7,6],[7,7],[7,8],
+  [6,8],[5,8],[4,8],[3,8],[2,8],[2,7],[2,6],[2,5],[2,4],
+  [3,4],[4,4],[5,4],[6,4],[6,5],[6,6],[6,7],
+  [5,7],[4,7],[3,7],[3,6],[3,5],
+  [4,5],[5,5],[5,6],[4,6],
+  [COLS-1,6]
+];
+// Simplify: use a zigzag path
+var SIMPATH=[];
+for(var i=0;i<COLS;i++)SIMPATH.push([i,2]);
+for(var i=3;i<9;i++)SIMPATH.push([COLS-3,i]);
+for(var i=COLS-4;i>=1;i--)SIMPATH.push([i,8]);
+for(var i=7;i>=3;i--)SIMPATH.push([1,i]);
+for(var i=2;i<COLS-1;i++)SIMPATH.push([i,3]);
+SIMPATH.push([COLS-1,3]);
+var pathSet=new Set();
+SIMPATH.forEach(function(p){pathSet.add(p[0]+','+p[1]);});
+var towers,enemies,bullets,gold,lives,score,wave,waving,selType,raf,spawnTimer,spawnCount,spawnTotal;
+function initGame(){
+  document.getElementById('overlay').style.display='none';
+  towers=[];enemies=[];bullets=[];gold=150;lives=20;score=0;wave=1;waving=false;selType='basic';
+  spawnTimer=0;spawnCount=0;spawnTotal=0;
+  upUI();selTower('basic');
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+function upUI(){
+  document.getElementById('gold').textContent=gold;
+  document.getElementById('lives').textContent=lives;
+  document.getElementById('score').textContent=score;
+  document.getElementById('wave').textContent=wave;
+}
+function selTower(type){
+  selType=type;
+  ['basic','ice','bomb'].forEach(function(t){document.getElementById('t-'+t).classList.remove('sel');});
+  document.getElementById('t-'+type).classList.add('sel');
+}
+var TOWER_DEF={
+  basic:{cost:50,range:90,dmg:20,rate:30,color:'#ffd700',bullet:'#fff'},
+  ice:{cost:80,range:80,dmg:8,rate:40,color:'#60c0ff',bullet:'#a0e0ff',slow:0.4},
+  bomb:{cost:120,range:100,dmg:60,rate:60,color:'#ff6b35',bullet:'#f00',aoe:50}
+};
+C.addEventListener('click',function(e){
+  var rect=C.getBoundingClientRect();
+  var mx=(e.clientX-rect.left)*(W/rect.width);
+  var my=(e.clientY-rect.top)*(H/rect.height);
+  var col=Math.floor(mx/CELL),row=Math.floor(my/CELL);
+  if(pathSet.has(col+','+row))return;
+  if(towers.some(function(t){return t.col===col&&t.row===row;}))return;
+  var def=TOWER_DEF[selType];
+  if(gold<def.cost){alert('金币不足！');return;}
+  gold-=def.cost;upUI();
+  towers.push({col:col,row:row,x:col*CELL+CELL/2,y:row*CELL+CELL/2,type:selType,cd:0,...def});
+});
+function startWave(){
+  if(waving)return;
+  waving=true;
+  spawnCount=0;
+  spawnTotal=8+wave*4;
+  spawnTimer=0;
+}
+var enemyId=0;
+function spawnEnemy(){
+  var hp=60+wave*30;
+  var spd=1.2+wave*0.15;
+  enemies.push({id:enemyId++,pi:0,x:SIMPATH[0][0]*CELL+CELL/2,y:SIMPATH[0][1]*CELL+CELL/2,
+    hp:hp,maxHp:hp,spd:spd,slow:0,slowTimer:0,r:10,reward:10+wave*2});
+}
+function loop(){update();draw();raf=requestAnimationFrame(loop);}
+function update(){
+  // spawn
+  if(waving&&spawnCount<spawnTotal){
+    spawnTimer++;
+    if(spawnTimer>=40){spawnTimer=0;spawnCount++;spawnEnemy();}
+  }
+  if(waving&&spawnCount>=spawnTotal&&enemies.length===0){
+    waving=false;wave++;
+    gold+=50+wave*10;upUI();
+    document.getElementById('wave').textContent=wave;
+  }
+  // enemies move
+  enemies.forEach(function(e){
+    if(e.slowTimer>0)e.slowTimer--;
+    var spd=e.slowTimer>0?e.spd*e.slow:e.spd;
+    var target=SIMPATH[e.pi+1];
+    if(!target){lives--;upUI();e.hp=0;if(lives<=0)gameover();return;}
+    var tx=target[0]*CELL+CELL/2,ty=target[1]*CELL+CELL/2;
+    var dx=tx-e.x,dy=ty-e.y,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<spd){e.x=tx;e.y=ty;e.pi++;}
+    else{e.x+=dx/dist*spd;e.y+=dy/dist*spd;}
+  });
+  enemies=enemies.filter(function(e){return e.hp>0;});
+  // towers shoot
+  towers.forEach(function(t){
+    t.cd--;
+    if(t.cd>0)return;
+    var target=null,minDist=t.range;
+    enemies.forEach(function(e){
+      var dx=e.x-t.x,dy=e.y-t.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<minDist){minDist=d;target=e;}
+    });
+    if(target){
+      t.cd=t.rate;
+      bullets.push({x:t.x,y:t.y,tx:target.id,type:t.type,dmg:t.dmg,
+        slow:t.slow,aoe:t.aoe,color:t.bullet,spd:6});
+    }
+  });
+  // bullets
+  bullets.forEach(function(b){
+    var e=enemies.find(function(e){return e.id===b.tx;});
+    if(!e){b.done=true;return;}
+    var dx=e.x-b.x,dy=e.y-b.y,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<b.spd+e.r){
+      b.done=true;
+      if(b.aoe){// bomb splash
+        enemies.forEach(function(en){
+          var dx2=en.x-e.x,dy2=en.y-e.y;
+          if(Math.sqrt(dx2*dx2+dy2*dy2)<b.aoe){en.hp-=b.dmg;}
+        });
+      } else {
+        e.hp-=b.dmg;
+      }
+      if(b.slow&&e.hp>0){e.slow=b.slow;e.slowTimer=80;}
+      if(e.hp<=0){score+=e.reward;gold+=e.reward;upUI();}
+    } else {
+      b.x+=dx/dist*b.spd;b.y+=dy/dist*b.spd;
+    }
+  });
+  bullets=bullets.filter(function(b){return !b.done;});
+}
+function draw(){
+  ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H);
+  // grid + path
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    var onPath=pathSet.has(c+','+r);
+    ctx.fillStyle=onPath?'#2d2d44':'#16213e';
+    ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+  }
+  // path highlight
+  ctx.strokeStyle='rgba(167,139,250,0.15)';ctx.lineWidth=CELL-4;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();
+  SIMPATH.forEach(function(p,i){
+    var x=p[0]*CELL+CELL/2,y=p[1]*CELL+CELL/2;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // towers
+  towers.forEach(function(t){
+    var def=TOWER_DEF[t.type];
+    ctx.fillStyle=def.color;
+    ctx.beginPath();ctx.arc(t.x,t.y,CELL/2-3,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(t.type==='basic'?'射':t.type==='ice'?'冰':'炮',t.x,t.y);
+  });
+  // enemies
+  enemies.forEach(function(e){
+    // shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();ctx.ellipse(e.x,e.y+e.r,e.r,4,0,0,Math.PI*2);ctx.fill();
+    // body
+    ctx.fillStyle=e.slowTimer>0?'#60c0ff':'#e74c3c';
+    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#c0392b';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('👾',e.x,e.y);
+    // hp bar
+    var bw=e.r*2.5,bh=4;
+    ctx.fillStyle='#333';ctx.fillRect(e.x-bw/2,e.y-e.r-7,bw,bh);
+    ctx.fillStyle='#2ecc71';ctx.fillRect(e.x-bw/2,e.y-e.r-7,bw*(e.hp/e.maxHp),bh);
+  });
+  // bullets
+  bullets.forEach(function(b){
+    ctx.fillStyle=b.color;
+    ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
+  });
+}
+function gameover(){
+  cancelAnimationFrame(raf);
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>💥 基地失守</h2><p>得分：'+score+'　投入波段：'+wave+'</p><button onclick="initGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+</script>
+</body>
+</html>

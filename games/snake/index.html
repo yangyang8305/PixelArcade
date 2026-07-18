@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贪吃蛇</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#eee;padding:20px}
+h1{font-size:2rem;margin-bottom:10px;color:#e94560;letter-spacing:2px}
+.info{display:flex;gap:30px;margin-bottom:14px;font-size:1rem}
+.info span{background:#16213e;padding:6px 18px;border-radius:20px}
+.info b{color:#e94560}
+canvas{border:2px solid #e94560;border-radius:4px;background:#0f3460;display:block}
+.controls{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.ctrl-row{display:flex;gap:6px}
+button.ctrl{width:48px;height:48px;background:#16213e;border:1px solid #e94560;color:#e94560;border-radius:6px;font-size:1.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.ctrl:active{background:#e94560;color:#fff}
+.hint{margin-top:10px;font-size:.8rem;color:#888;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#e94560;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#eee;margin-bottom:20px}
+#overlay button{background:#e94560;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>🐍 贪吃蛇</h1>
+<div class="info">
+  <span>分数 <b id="score">0</b></span>
+  <span>最高 <b id="best">0</b></span>
+  <span>速度 <b id="lvl">1</b></span>
+</div>
+<canvas id="c" width="400" height="400"></canvas>
+<div class="controls">
+  <div class="ctrl-row"><button class="ctrl" onclick="setDir(0,-1)">↑</button></div>
+  <div class="ctrl-row">
+    <button class="ctrl" onclick="setDir(-1,0)">←</button>
+    <button class="ctrl" onclick="setDir(0,1)">↓</button>
+    <button class="ctrl" onclick="setDir(1,0)">→</button>
+  </div>
+</div>
+<p class="hint">方向键 / WASD / 屏幕按钮控制</p>
+<div id="overlay">
+  <h2>🐍 贪吃蛇</h2>
+  <p>用方向键或屏幕按钮控制蛇吃食物</p>
+  <button onclick="startGame()">开始游戏</button>
+</div>
+<script>
+var COLS=20,ROWS=20,SZ=20;
+var ctx=document.getElementById('c').getContext('2d');
+var snake,dir,food,score,best,loop,speed,alive;
+best=+localStorage.getItem('snakeBest')||0;
+document.getElementById('best').textContent=best;
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+  dir={x:1,y:0};food=randomFood();score=0;speed=150;alive=true;
+  document.getElementById('score').textContent=0;
+  document.getElementById('lvl').textContent=1;
+  clearInterval(loop);loop=setInterval(tick,speed);
+}
+function randomFood(){
+  var f;
+  do{f={x:Math.random()*COLS|0,y:Math.random()*ROWS|0};}while(snake.some(s=>s.x===f.x&&s.y===f.y));
+  return f;
+}
+function setDir(dx,dy){if(dx===-dir.x&&dy===-dir.y)return;dir={x:dx,y:dy};}
+function tick(){
+  var head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snake.some(s=>s.x===head.x&&s.y===head.y)){
+    clearInterval(loop);alive=false;
+    if(score>best){best=score;localStorage.setItem('snakeBest',best);}
+    setTimeout(function(){showOver();},300);return;
+  }
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){
+    score++;document.getElementById('score').textContent=score;
+    if(score>best){best=score;localStorage.setItem('snakeBest',best);document.getElementById('best').textContent=best;}
+    food=randomFood();
+    if(score%5===0){
+      speed=Math.max(60,speed-10);clearInterval(loop);loop=setInterval(tick,speed);
+      document.getElementById('lvl').textContent=Math.floor(score/5)+1;
+    }
+  }else{snake.pop();}
+  draw();
+}
+function draw(){
+  ctx.fillStyle='#0f3460';ctx.fillRect(0,0,400,400);
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,.04)';
+  for(var i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(i*SZ,0);ctx.lineTo(i*SZ,400);ctx.stroke();}
+  for(var j=0;j<=ROWS;j++){ctx.beginPath();ctx.moveTo(0,j*SZ);ctx.lineTo(400,j*SZ);ctx.stroke();}
+  // snake
+  snake.forEach(function(s,i){
+    var g=ctx.createRadialGradient(s.x*SZ+SZ/2,s.y*SZ+SZ/2,1,s.x*SZ+SZ/2,s.y*SZ+SZ/2,SZ/2);
+    if(i===0){g.addColorStop(0,'#ff6b6b');g.addColorStop(1,'#e94560');}
+    else{g.addColorStop(0,'#4ecdc4');g.addColorStop(1,'#2ab7b0');}
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.roundRect(s.x*SZ+1,s.y*SZ+1,SZ-2,SZ-2,4);ctx.fill();
+  });
+  // food
+  ctx.fillStyle='#ffd93d';
+  ctx.beginPath();ctx.arc(food.x*SZ+SZ/2,food.y*SZ+SZ/2,SZ/2-2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ff6b6b';ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('★',food.x*SZ+SZ/2,food.y*SZ+SZ/2);
+}
+function showOver(){
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>游戏结束</h2><p>得分：'+score+'　最高：'+best+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+document.addEventListener('keydown',function(e){
+  var map={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1],a:[-1,0],d:[1,0],w:[0,-1],s:[0,1],A:[-1,0],D:[1,0],W:[0,-1],S:[0,1]};
+  if(map[e.key]&&alive){e.preventDefault();setDir(map[e.key][0],map[e.key][1]);}
+});
+// touch swipe
+var tx,ty;
+document.getElementById('c').addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+document.getElementById('c').addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(!alive)return;
+  if(Math.abs(dx)>Math.abs(dy)){setDir(dx>0?1:-1,0);}else{setDir(0,dy>0?1:-1);}
+},{passive:true});
+// polyfill roundRect for older browsers
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+    this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
+  };
+}
+</script>
+</body>
+</html>

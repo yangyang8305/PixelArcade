@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六消 Hextris</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#eee;padding:20px;overflow:hidden}
+h1{font-size:1.8rem;margin-bottom:8px;color:#f7c948;letter-spacing:3px}
+.info{display:flex;gap:24px;margin-bottom:12px;font-size:.95rem}
+.info span{background:#16213e;padding:5px 16px;border-radius:20px}
+.info b{color:#f7c948}
+canvas{border:2px solid #f7c948;border-radius:50%;background:#0f3460}
+.hint{margin-top:12px;font-size:.78rem;color:#888;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#f7c948;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#ccc;margin-bottom:8px;font-size:.9rem;text-align:center;max-width:320px}
+#overlay button{background:#f7c948;color:#1a1a2e;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:12px}
+</style>
+</head>
+<body>
+<h1>⬡ 六消</h1>
+<div class="info">
+  <span>分数 <b id="score">0</b></span>
+  <span>最高 <b id="best">0</b></span>
+  <span>级别 <b id="lvl">1</b></span>
+</div>
+<canvas id="c" width="420" height="420"></canvas>
+<p class="hint">← → 旋转方块 | A D | 屏幕左右半边点击</p>
+<div id="overlay">
+  <h2>⬡ 六消</h2>
+  <p>色块从外圈落入六边形，同色3块连接即消除。<br>← → 旋转控制落点，别让格子填满！</p>
+  <button onclick="startGame()">开始游戏</button>
+</div>
+<script>
+// ── 六边形消除游戏 ──
+// 六边形由 RINGS 层同心环组成，每环6格，从外向内落块。
+var COLORS=['#e94560','#f7c948','#4ecdc4','#a29bfe','#fd79a8','#55efc4'];
+var RINGS=5,SLOTS=6;
+var ctx=document.getElementById('c').getContext('2d');
+var W=420,H=420,CX=W/2,CY=H/2;
+var board,queue,score,best,alive,loop,speed,lvl;
+best=+localStorage.getItem('hextrisBest')||0;
+document.getElementById('best').textContent=best;
+
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  // board[ring][slot] = colorIndex or -1, ring 0 = innermost
+  board=[];
+  for(var r=0;r<RINGS;r++){board.push(new Array(SLOTS).fill(-1));}
+  queue=[rndColor(),rndColor(),rndColor()];
+  score=0;alive=true;speed=1200;lvl=1;
+  document.getElementById('score').textContent=0;
+  document.getElementById('lvl').textContent=1;
+  clearInterval(loop);loop=setInterval(tick,speed);
+  draw();
+}
+function rndColor(){return Math.random()*COLORS.length|0;}
+
+// current dropping piece: which slot (0-5) it's heading to
+var dropSlot=0;
+
+function tick(){
+  // drop piece into dropSlot
+  dropPiece(dropSlot);
+  checkMatches();
+  if(!alive)return;
+  dropSlot=(dropSlot+1)%SLOTS; // auto rotate slot for variety
+  if(score>best){best=score;localStorage.setItem('hextrisBest',best);document.getElementById('best').textContent=best;}
+  draw();
+}
+
+function dropPiece(slot){
+  var color=queue.shift();
+  queue.push(rndColor());
+  // find outermost empty ring for this slot
+  var placed=false;
+  for(var r=RINGS-1;r>=0;r--){
+    if(board[r][slot]===-1){
+      board[r][slot]=color;
+      placed=true;break;
+    }
+  }
+  if(!placed){
+    // column full -> game over
+    alive=false;clearInterval(loop);
+    draw();
+    setTimeout(showOver,400);
+  }
+}
+
+function checkMatches(){
+  var changed=true;
+  while(changed){
+    changed=false;
+    // Check each slot vertically (ring direction)
+    for(var s=0;s<SLOTS;s++){
+      var run=1;
+      for(var r=1;r<RINGS;r++){
+        if(board[r][s]!==-1&&board[r][s]===board[r-1][s]){run++;}else{run=1;}
+        if(run>=3){
+          var pts=run;
+          for(var k=r-run+1;k<=r;k++){board[k][s]=-1;}
+          score+=pts;changed=true;
+        }
+      }
+    }
+    // Check each ring horizontally (slot direction, circular)
+    for(var r=0;r<RINGS;r++){
+      for(var s=0;s<SLOTS;s++){
+        var c=board[r][s];
+        if(c===-1)continue;
+        var run=1;
+        var ns=(s+1)%SLOTS;
+        while(board[r][ns]===c&&ns!==s){run++;ns=(ns+1)%SLOTS;}
+        if(run>=3){
+          var pts=run;
+          for(var k=0;k<run;k++){board[r][(s+k)%SLOTS]=-1;}
+          score+=pts;changed=true;break;
+        }
+      }
+    }
+    // gravity: cells fall inward
+    for(var s=0;s<SLOTS;s++){
+      var col=[];
+      for(var r=0;r<RINGS;r++)if(board[r][s]!==-1)col.push(board[r][s]);
+      for(var r=0;r<RINGS;r++)board[r][s]=(r<RINGS-col.length)?-1:col[r-(RINGS-col.length)];
+    }
+    document.getElementById('score').textContent=score;
+    // level up
+    var newLvl=Math.floor(score/10)+1;
+    if(newLvl>lvl){lvl=newLvl;document.getElementById('lvl').textContent=lvl;speed=Math.max(300,1200-lvl*80);clearInterval(loop);loop=setInterval(tick,speed);}
+  }
+}
+
+function hexPt(angle,r){return{x:CX+r*Math.cos(angle),y:CY+r*Math.sin(angle)};}
+
+function drawHexRing(ringIdx,color,alpha){
+  var outerR=30+(RINGS-ringIdx)*(W/2-30)/RINGS;
+  var innerR=30+(RINGS-ringIdx-1)*(W/2-30)/RINGS;
+  for(var s=0;s<SLOTS;s++){
+    var a0=(s/SLOTS)*Math.PI*2-Math.PI/2;
+    var a1=((s+1)/SLOTS)*Math.PI*2-Math.PI/2;
+    var am=(a0+a1)/2;
+    ctx.beginPath();
+    // outer arc
+    for(var i=0;i<=12;i++){var a=a0+(a1-a0)*i/12;var p=hexPt(a,outerR);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}
+    // inner arc reverse
+    for(var i=12;i>=0;i--){var a=a0+(a1-a0)*i/12;var p=hexPt(a,innerR);ctx.lineTo(p.x,p.y);}
+    ctx.closePath();
+    var c=board[ringIdx][s];
+    if(c!==-1){
+      ctx.fillStyle=COLORS[c];
+    }else{
+      ctx.fillStyle='rgba(15,52,96,0.7)';
+    }
+    ctx.fill();
+    ctx.strokeStyle='#1a1a2e';ctx.lineWidth=2;ctx.stroke();
+    // highlight dropSlot
+    if(s===dropSlot&&c===-1){
+      ctx.fillStyle='rgba(247,201,72,0.15)';
+      ctx.fill();
+    }
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // background circle
+  ctx.fillStyle='#0f3460';
+  ctx.beginPath();ctx.arc(CX,CY,W/2-2,0,Math.PI*2);ctx.fill();
+  // rings from outer to inner
+  for(var r=RINGS-1;r>=0;r--)drawHexRing(r);
+  // center
+  ctx.fillStyle='#f7c948';
+  ctx.beginPath();ctx.arc(CX,CY,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a1a2e';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('HEX',CX,CY);
+  // queue preview
+  for(var i=0;i<3;i++){
+    ctx.fillStyle=COLORS[queue[i]];
+    ctx.beginPath();ctx.arc(20+i*28,20,10,0,Math.PI*2);ctx.fill();
+  }
+  // drop arrow
+  var a=(dropSlot/SLOTS)*Math.PI*2-Math.PI/2;
+  var arrowR=W/2-12;
+  var ax=CX+arrowR*Math.cos(a),ay=CY+arrowR*Math.sin(a);
+  ctx.fillStyle='#f7c948';
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(a+Math.PI/2);
+  ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(7,5);ctx.lineTo(-7,5);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function showOver(){
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>游戏结束</h2><p>得分：'+score+'　最高：'+best+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+
+function rotate(d){
+  dropSlot=(dropSlot+d+SLOTS)%SLOTS;
+  draw();
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){e.preventDefault();rotate(-1);}
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){e.preventDefault();rotate(1);}
+});
+document.getElementById('c').addEventListener('click',function(e){
+  var rect=this.getBoundingClientRect();
+  var cx=rect.left+rect.width/2;
+  rotate(e.clientX<cx?-1:1);
+});
+var tx2;
+document.getElementById('c').addEventListener('touchstart',function(e){tx2=e.touches[0].clientX;},{passive:true});
+document.getElementById('c').addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-tx2;
+  if(Math.abs(dx)>20)rotate(dx>0?1:-1);
+},{passive:true});
+</script>
+</body>
+</html>

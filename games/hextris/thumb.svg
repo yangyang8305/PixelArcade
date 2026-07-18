@@ -1,0 +1,26 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='#1a1a2e'/><circle cx='150' cy='95' r='88' fill='#0f3460' stroke='#f7c948' stroke-width='2'/>
+<!-- hex ring slices: 6 segments outer ring -->
+<path d='M150 95 L150 20 A75 75 0 0 1 215 57.5 Z' fill='#e94560' opacity='0.85'/>
+<path d='M150 95 L215 57.5 A75 75 0 0 1 215 132.5 Z' fill='#4ecdc4' opacity='0.85'/>
+<path d='M150 95 L215 132.5 A75 75 0 0 1 150 170 Z' fill='#a29bfe' opacity='0.85'/>
+<path d='M150 95 L150 170 A75 75 0 0 1 85 132.5 Z' fill='#fd79a8' opacity='0.85'/>
+<path d='M150 95 L85 132.5 A75 75 0 0 1 85 57.5 Z' fill='#f7c948' opacity='0.85'/>
+<path d='M150 95 L85 57.5 A75 75 0 0 1 150 20 Z' fill='#55efc4' opacity='0.85'/>
+<!-- inner ring -->
+<path d='M150 95 L150 45 A50 50 0 0 1 193.3 70 Z' fill='#f7c948' opacity='0.7'/>
+<path d='M150 95 L193.3 70 A50 50 0 0 1 193.3 120 Z' fill='#e94560' opacity='0.7'/>
+<path d='M150 95 L193.3 120 A50 50 0 0 1 150 145 Z' fill='#4ecdc4' opacity='0.7'/>
+<path d='M150 95 L150 145 A50 50 0 0 1 106.7 120 Z' fill='#a29bfe' opacity='0.7'/>
+<path d='M150 95 L106.7 120 A50 50 0 0 1 106.7 70 Z' fill='#55efc4' opacity='0.7'/>
+<path d='M150 95 L106.7 70 A50 50 0 0 1 150 45 Z' fill='#fd79a8' opacity='0.7'/>
+<!-- center -->
+<circle cx='150' cy='95' r='26' fill='#f7c948'/>
+<text x='150' y='100' font-family='Arial' font-size='11' font-weight='bold' fill='#1a1a2e' text-anchor='middle'>HEX</text>
+<!-- separators -->
+<line x1='150' y1='95' x2='150' y2='7' stroke='#1a1a2e' stroke-width='1.5'/>
+<line x1='150' y1='95' x2='215' y2='57.5' stroke='#1a1a2e' stroke-width='1.5'/>
+<line x1='150' y1='95' x2='215' y2='132.5' stroke='#1a1a2e' stroke-width='1.5'/>
+<line x1='150' y1='95' x2='150' y2='183' stroke='#1a1a2e' stroke-width='1.5'/>
+<line x1='150' y1='95' x2='85' y2='132.5' stroke='#1a1a2e' stroke-width='1.5'/>
+<line x1='150' y1='95' x2='85' y2='57.5' stroke='#1a1a2e' stroke-width='1.5'/>
+<text x='150' y='192' font-family='Arial' font-size='14' font-weight='bold' fill='#f7c948' text-anchor='middle'>⬡ 六消 Hextris</text></svg>

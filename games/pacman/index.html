@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>吃豆人 Pac-Man</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;font-family:'Courier New',monospace}
+
+/* ── 顶部 HUD ── */
+#hud{
+  width:100%;max-width:560px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 12px;
+  background:#000;
+  border-bottom:2px solid #1a1aff;
+}
+.hud-block{display:flex;flex-direction:column;align-items:center;gap:1px}
+.hud-label{font-size:9px;letter-spacing:2px;color:#1a1aff;text-transform:uppercase}
+.hud-val{font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;text-shadow:0 0 8px #ff0,0 0 2px #ff0}
+.lives-icons{display:flex;gap:4px;align-items:center}
+
+/* ── Canvas 容器 ── */
+#game-wrap{
+  position:relative;
+  width:100%;max-width:560px;
+  flex:1;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* ── 覆盖层 ── */
+#overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.82);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:20;
+}
+#overlay.hidden{display:none}
+.ov-title{
+  font-size:36px;font-weight:900;letter-spacing:6px;
+  color:#ff0;
+  text-shadow:0 0 20px #ff0,0 0 40px #fa0;
+  margin-bottom:6px;
+  animation:pulse 1s ease-in-out infinite alternate;
+}
+@keyframes pulse{from{opacity:.7}to{opacity:1}}
+.ov-sub{
+  font-size:12px;letter-spacing:3px;color:#fff;
+  margin-bottom:28px;opacity:.8;
+}
+.ov-score{font-size:14px;color:#0ff;letter-spacing:2px;margin-bottom:20px}
+.ov-btn{
+  padding:10px 36px;
+  font-size:14px;letter-spacing:3px;font-family:'Courier New',monospace;
+  background:transparent;
+  border:2px solid #ff0;
+  color:#ff0;
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:all .15s;
+  text-shadow:0 0 8px #ff0;
+  box-shadow:0 0 12px #ff04,inset 0 0 12px #ff01;
+}
+.ov-btn:hover{background:#ff0;color:#000;box-shadow:0 0 24px #ff0}
+
+/* ── 虚拟按键（移动端）── */
+#dpad{
+  width:100%;max-width:560px;
+  display:grid;
+  grid-template-columns:repeat(3,52px);
+  grid-template-rows:repeat(2,52px);
+  gap:6px;
+  justify-content:center;
+  padding:10px 0;
+  background:#000;
+}
+#dpad button{
+  width:52px;height:52px;
+  background:rgba(26,26,255,.12);
+  border:1.5px solid rgba(26,26,255,.5);
+  border-radius:8px;
+  color:#fff;
+  font-size:22px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+  transition:background .1s;
+}
+#dpad button:active{background:rgba(26,26,255,.4)}
+#dpad .empty{background:transparent;border:none;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="hud-block">
+    <div class="hud-label">SCORE</div>
+    <div class="hud-val" id="hud-score">0</div>
+  </div>
+  <div class="hud-block">
+    <div class="hud-label">LIVES</div>
+    <div class="lives-icons" id="hud-lives"></div>
+  </div>
+  <div class="hud-block">
+    <div class="hud-label">LEVEL</div>
+    <div class="hud-val" id="hud-level">1</div>
+  </div>
+</div>
+
+<div id="game-wrap">
+  <canvas id="c"></canvas>
+  <div id="overlay">
+    <div class="ov-title">PAC-MAN</div>
+    <div class="ov-sub">pixel edition</div>
+    <div class="ov-score" id="ov-score"></div>
+    <button class="ov-btn" id="ov-btn">INSERT COIN</button>
+  </div>
+</div>
+
+<div id="dpad">
+  <div class="empty"></div>
+  <button data-dir="up">▲</button>
+  <div class="empty"></div>
+  <button data-dir="left">◀</button>
+  <button data-dir="down">▼</button>
+  <button data-dir="right">▶</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// 地图定义  0=通道  1=墙  2=豆  3=能量豆  4=空(鬼屋)
+// ═══════════════════════════════════════════════
+const RAW_MAP = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,3,1,1,1,2,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+  [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,2,1],
+  [1,2,2,2,2,2,1,1,2,2,2,2,2,1,1,2,2,2,2,2,1,1,2,2,2,2,2,1],
+  [1,1,1,1,1,2,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,1,2,1,1,1,1,1],
+  [1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1],
+  [1,1,1,1,1,2,1,1,0,1,1,4,4,4,4,4,1,1,0,0,1,1,2,1,1,1,1,1],
+  [0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,0,0,2,0,0,0,0,0],
+  [1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,1,0,0,1,1,2,1,1,1,1,1],
+  [1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1],
+  [1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,1,0,0,1,1,2,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,3,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,3,1],
+  [1,1,1,2,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+  [1,2,2,2,2,2,1,1,2,2,2,2,2,1,1,2,2,2,2,2,1,1,2,2,2,2,2,1],
+  [1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+const COLS = RAW_MAP[0].length;
+const ROWS = RAW_MAP.length;
+
+// ── Canvas 自适应 ──
+const wrap = document.getElementById('game-wrap');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let CELL, W, H;
+
+function resize(){
+  const maxW = Math.min(wrap.clientWidth, 560);
+  const maxH = wrap.clientHeight || 400;
+  CELL = Math.max(8, Math.floor(Math.min(maxW / COLS, maxH / ROWS)));
+  W = CELL * COLS; H = CELL * ROWS;
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+}
+resize();
+window.addEventListener('resize', ()=>{ resize(); });
+
+// ════════ 状态 ════════
+let map, score, level, lives, state;
+// state: 'title' | 'playing' | 'dying' | 'win' | 'gameover'
+let pacman, ghosts;
+let powerTimer = 0;       // 能量豆剩余帧
+let eatCombo = 0;         // 连吃鬼加分
+let dyingFrame = 0;
+let nextDir;
+let totalDots;
+let flashFrame = 0;
+let scatterTimer = 0;     // 散开/追踪切换
+
+// ── Pac-Man 像素嘴巴动画 ──
+let mouthAngle = 0.25;    // 0..0.5 (pi倍)
+let mouthDir   = -1;
+
+// ════════ 地图工具 ════════
+function cloneMap(){ return RAW_MAP.map(r=>r.slice()); }
+function isWall(mx,my){
+  if(mx<0||mx>=COLS||my<0||my>=ROWS) return true;
+  const v=map[my][mx]; return v===1;
+}
+function canMove(mx,my){ return !isWall(mx,my); }
+
+// ════════ 初始化 ════════
+function initLevel(){
+  map = cloneMap();
+  // 计算豆子总数
+  totalDots = 0;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+    if(map[r][c]===2||map[r][c]===3) totalDots++;
+
+  pacman = { x:14, y:17, px:14*CELL+CELL/2, py:17*CELL+CELL/2,
+             dir:{x:0,y:0}, speed: 1.8+level*0.08 };
+  nextDir = {x:0,y:0};
+
+  const ghostDefs = [
+    {name:'blinky', color:'#ff2020', sx:13, sy:9,  scatter:{x:25,y:0},  mode:'scatter'},
+    {name:'pinky',  color:'#ffb8ff', sx:13, sy:10, scatter:{x:2, y:0},  mode:'house'},
+    {name:'inky',   color:'#00ffff', sx:11, sy:10, scatter:{x:27,y:21}, mode:'house'},
+    {name:'clyde',  color:'#ffb852', sx:15, sy:10, scatter:{x:0, y:21}, mode:'house'},
+  ];
+  ghosts = ghostDefs.map((d,i)=>({...d,
+    x:d.sx, y:d.sy,
+    px:d.sx*CELL+CELL/2, py:d.sy*CELL+CELL/2,
+    dir:{x:0,y:0}, scared:false,
+    eaten:false, houseTimer: i*120,
+    speed: 1.4+level*0.07
+  }));
+  powerTimer=0; eatCombo=0;
+  scatterTimer = 0;
+}
+
+function startGame(){
+  score=0; level=1; lives=3;
+  state='playing';
+  initLevel();
+  document.getElementById('overlay').classList.add('hidden');
+  updateHUD();
+  loop();
+}
+
+// ════════ HUD ════════
+function updateHUD(){
+  document.getElementById('hud-score').textContent=score;
+  document.getElementById('hud-level').textContent=level;
+  const lv = document.getElementById('hud-lives');
+  lv.innerHTML='';
+  for(let i=0;i<lives;i++){
+    const c2=document.createElement('canvas');
+    c2.width=14;c2.height=14;
+    drawMiniPac(c2.getContext('2d'),7,7,5);
+    lv.appendChild(c2);
+  }
+}
+function drawMiniPac(c,x,y,r){
+  c.fillStyle='#ff0';
+  c.beginPath();c.moveTo(x,y);
+  c.arc(x,y,r,0.3*Math.PI,1.7*Math.PI);c.closePath();
+  c.fill();
+}
+
+// ════════ 像素绘制工具 ════════
+function pixelRect(x,y,w,h,color){
+  ctx.fillStyle=color;
+  ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+}
+
+// ── 画墙（像素风蓝色砖块）──
+function drawWall(cx,cy){
+  const x=cx*CELL, y=cy*CELL, s=CELL;
+  // 深蓝底
+  pixelRect(x,y,s,s,'#00008b');
+  // 亮边（左+上）
+  pixelRect(x,y,s,1,'#4040ff');
+  pixelRect(x,y,1,s,'#4040ff');
+  // 暗边（右+下）
+  pixelRect(x+s-1,y,1,s,'#000033');
+  pixelRect(x,y+s-1,s,1,'#000033');
+  // 内发光点
+  pixelRect(x+2,y+2,s-4,s-4,'#0000a0');
+  // 像素高光角
+  pixelRect(x+2,y+2,2,2,'#6060ff');
+}
+
+// ── 画普通豆 ──
+function drawDot(cx,cy){
+  const x=cx*CELL+CELL/2, y=cy*CELL+CELL/2;
+  const r=Math.max(1, CELL*0.12);
+  ctx.fillStyle='#ffb8ae';
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  // 高光
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(x-r*0.3,y-r*0.3,r*0.4,0,Math.PI*2);ctx.fill();
+}
+
+// ── 画能量豆（闪烁大点）──
+function drawPower(cx,cy){
+  if(Math.floor(Date.now()/300)%2===0) return; // 闪烁
+  const x=cx*CELL+CELL/2, y=cy*CELL+CELL/2;
+  const r=CELL*0.32;
+  // 外发光
+  const grd=ctx.createRadialGradient(x,y,r*0.2,x,y,r*1.4);
+  grd.addColorStop(0,'rgba(255,255,160,0.6)');
+  grd.addColorStop(1,'rgba(255,255,160,0)');
+  ctx.fillStyle=grd;
+  ctx.beginPath();ctx.arc(x,y,r*1.4,0,Math.PI*2);ctx.fill();
+  // 主体
+  ctx.fillStyle='#ffff80';
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  // 高光
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(x-r*0.3,y-r*0.3,r*0.35,0,Math.PI*2);ctx.fill();
+}
+
+// ── 画 Pac-Man（像素风）──
+function drawPacman(){
+  const px=pacman.px, py=pacman.py;
+  const r=CELL*0.44;
+
+  // 嘴巴动画
+  mouthAngle += 0.07 * mouthDir;
+  if(mouthAngle<=0){mouthAngle=0;mouthDir=1;}
+  if(mouthAngle>=0.28){mouthAngle=0.28;mouthDir=-1;}
+
+  // 方向角度
+  let rot=0;
+  if(pacman.dir.x===1) rot=0;
+  else if(pacman.dir.x===-1) rot=Math.PI;
+  else if(pacman.dir.y===-1) rot=Math.PI*1.5;
+  else if(pacman.dir.y===1) rot=Math.PI*0.5;
+
+  const a1 = rot + mouthAngle*Math.PI;
+  const a2 = rot - mouthAngle*Math.PI;
+
+  // 黄色发光
+  const grd=ctx.createRadialGradient(px,py,0,px,py,r*1.2);
+  grd.addColorStop(0,'rgba(255,230,0,0.4)');
+  grd.addColorStop(1,'rgba(255,200,0,0)');
+  ctx.fillStyle=grd;
+  ctx.beginPath();ctx.arc(px,py,r*1.3,0,Math.PI*2);ctx.fill();
+
+  // 主体
+  ctx.fillStyle='#ffe000';
+  ctx.beginPath();
+  ctx.moveTo(px,py);
+  ctx.arc(px,py,r,a1,a2);
+  ctx.closePath();
+  ctx.fill();
+
+  // 像素高光
+  ctx.fillStyle='rgba(255,255,200,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(px-r*0.22,py-r*0.28,r*0.28,r*0.18,-0.5,0,Math.PI*2);
+  ctx.fill();
+
+  // 眼睛
+  const ex=px+Math.cos(rot-Math.PI*0.38)*r*0.52;
+  const ey=py+Math.sin(rot-Math.PI*0.38)*r*0.52;
+  ctx.fillStyle='#000';
+  ctx.beginPath();ctx.arc(ex,ey,r*0.12,0,Math.PI*2);ctx.fill();
+}
+
+// ── 画幽灵（像素风）──
+function drawGhost(g){
+  const x=g.px, y=g.py;
+  const r=CELL*0.44;
+
+  let bodyColor = g.scared ? (powerTimer<100&&Math.floor(Date.now()/150)%2?'#fff':'#2020ff') : g.color;
+  if(g.eaten) bodyColor='transparent';
+
+  if(!g.eaten){
+    // 外发光
+    const grd2=ctx.createRadialGradient(x,y,0,x,y,r*1.3);
+    grd2.addColorStop(0,bodyColor.replace(')',',0.3)').replace('rgb','rgba').replace('#',`rgba(0,0,0,`));
+    // 简单发光
+    ctx.save();ctx.globalAlpha=0.25;
+    ctx.fillStyle=bodyColor;
+    ctx.beginPath();ctx.arc(x,y,r*1.3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+
+    // 主体上半圆
+    ctx.fillStyle=bodyColor;
+    ctx.beginPath();
+    ctx.arc(x,y-r*0.1,r,Math.PI,0,false);
+    // 裙边波浪（像素锯齿）
+    const bottom=y-r*0.1+r;
+    const ww=r*2;
+    const teeth=4;
+    const tw=ww/teeth;
+    ctx.lineTo(x+r,bottom);
+    for(let i=teeth;i>=0;i--){
+      const tx2=x-r+i*tw;
+      ctx.lineTo(tx2, i%2===0?bottom:bottom-r*0.28);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // 眼白
+    if(!g.scared){
+      const eyeOffX=[-r*0.3,r*0.3];
+      eyeOffX.forEach(ox=>{
+        ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.ellipse(x+ox,y-r*0.22,r*0.18,r*0.24,0,0,Math.PI*2);ctx.fill();
+        // 瞳孔（跟随运动方向）
+        const px2=x+ox+g.dir.x*r*0.08;
+        const py2=y-r*0.22+g.dir.y*r*0.08;
+        ctx.fillStyle='#0033ff';
+        ctx.beginPath();ctx.arc(px2,py2,r*0.1,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#000';
+        ctx.beginPath();ctx.arc(px2+r*0.03,py2-r*0.03,r*0.05,0,Math.PI*2);ctx.fill();
+      });
+    } else {
+      // 害怕脸
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(x-r*0.25,y-r*0.15,r*0.1,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(x+r*0.25,y-r*0.15,r*0.1,0,Math.PI*2);ctx.fill();
+      // 锯齿嘴
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(x-r*0.35,y+r*0.1);
+      for(let i=0;i<5;i++){
+        ctx.lineTo(x-r*0.35+i*r*0.175+r*0.0875, y+r*0.1+(i%2===0?r*0.14:-r*0.14));
+      }
+      ctx.stroke();
+    }
+
+    // 高光
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.beginPath();ctx.ellipse(x-r*0.2,y-r*0.4,r*0.25,r*0.14,-0.4,0,Math.PI*2);ctx.fill();
+  } else {
+    // 被吃掉只显示眼睛
+    const eyeOffX=[-r*0.28,r*0.28];
+    eyeOffX.forEach(ox=>{
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.ellipse(x+ox,y,r*0.15,r*0.2,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#00f';
+      ctx.beginPath();ctx.arc(x+ox,y+r*0.04,r*0.08,0,Math.PI*2);ctx.fill();
+    });
+  }
+}
+
+// ════════ 移动逻辑 ════════
+function tryMove(entity, dx, dy){
+  const nx=entity.px + dx;
+  const ny=entity.py + dy;
+  // 格子中心
+  const mx=Math.round((nx-CELL/2)/CELL);
+  const my=Math.round((ny-CELL/2)/CELL);
+  if(canMove(mx,my)){
+    entity.px=nx; entity.py=ny;
+    entity.x=mx; entity.y=my;
+    return true;
+  }
+  return false;
+}
+
+function movePacman(){
+  const sp=pacman.speed;
+  // 尝试切换方向
+  const nd=nextDir;
+  if(nd.x||nd.y){
+    const ok=tryMove(pacman,nd.x*sp,nd.y*sp);
+    if(ok){pacman.dir=nd;return;}
+  }
+  // 继续当前方向
+  const d=pacman.dir;
+  if(d.x||d.y) tryMove(pacman,d.x*sp,d.y*sp);
+
+  // 隧道穿越
+  if(pacman.px<0) pacman.px=W-1;
+  if(pacman.px>W) pacman.px=0;
+}
+
+function eatDot(){
+  const mx=Math.round((pacman.px-CELL/2)/CELL);
+  const my=Math.round((pacman.py-CELL/2)/CELL);
+  const cell=map[my]?.[mx];
+  if(cell===2){ map[my][mx]=0; score+=10; totalDots--; updateHUD(); }
+  if(cell===3){
+    map[my][mx]=0; score+=50; totalDots--; updateHUD();
+    powerTimer=400+level*(-20>-150?-20*level:-150);
+    powerTimer=Math.max(200,powerTimer);
+    ghosts.forEach(g=>{if(!g.eaten){g.scared=true;}});
+    eatCombo=0;
+  }
+}
+
+// ── 幽灵 AI（BFS 寻路）──
+function bfsNext(gx,gy,tx,ty,forbidden){
+  // 简化：评估4方向距离
+  const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+  let best=null,bestDist=Infinity;
+  dirs.forEach(d=>{
+    if(forbidden&&d.x===-forbidden.x&&d.y===-forbidden.y) return;
+    const nx=gx+d.x,ny=gy+d.y;
+    if(isWall(nx,ny)) return;
+    const dist=(nx-tx)**2+(ny-ty)**2;
+    if(dist<bestDist){bestDist=dist;best=d;}
+  });
+  return best||{x:0,y:0};
+}
+
+function moveGhost(g){
+  if(g.houseTimer>0){g.houseTimer--;return;}
+
+  const sp = g.eaten?2.2 : g.scared?1.0 : g.speed;
+  const atCenter=
+    Math.abs(g.px-(g.x*CELL+CELL/2))<sp+0.5 &&
+    Math.abs(g.py-(g.y*CELL+CELL/2))<sp+0.5;
+
+  if(atCenter){
+    g.px=g.x*CELL+CELL/2; g.py=g.y*CELL+CELL/2;
+    let tx,ty;
+    if(g.scared){
+      // 逃跑：逃离吃豆人
+      tx=2*(g.x-pacman.x)+g.x; ty=2*(g.y-pacman.y)+g.y;
+    } else if(g.eaten){
+      // 回家
+      tx=13;ty=10;
+    } else {
+      // 各幽灵策略
+      if(g.name==='blinky'){tx=pacman.x;ty=pacman.y;}
+      else if(g.name==='pinky'){
+        tx=pacman.x+pacman.dir.x*4;
+        ty=pacman.y+pacman.dir.y*4;
+      } else if(g.name==='inky'){
+        const blinky=ghosts.find(x=>x.name==='blinky');
+        const mx2=pacman.x+pacman.dir.x*2;
+        const my2=pacman.y+pacman.dir.y*2;
+        tx=2*mx2-blinky.x; ty=2*my2-blinky.y;
+      } else {
+        // Clyde: 距离近时逃散
+        const dist=Math.hypot(g.x-pacman.x,g.y-pacman.y);
+        if(dist>8){tx=pacman.x;ty=pacman.y;}
+        else{tx=g.scatter.x;ty=g.scatter.y;}
+      }
+    }
+    const d=bfsNext(g.x,g.y,tx,ty,{x:-g.dir.x,y:-g.dir.y});
+    g.dir=d;
+    // 到家则复活
+    if(g.eaten&&g.x===13&&g.y===10){g.eaten=false;g.scared=false;}
+  }
+  // 实际移动
+  g.px+=g.dir.x*sp;
+  g.py+=g.dir.y*sp;
+  g.x=Math.round((g.px-CELL/2)/CELL);
+  g.y=Math.round((g.py-CELL/2)/CELL);
+  // 隧道
+  if(g.px<0)g.px=W-1;
+  if(g.px>W)g.px=0;
+}
+
+function checkCollision(){
+  ghosts.forEach(g=>{
+    const dx=g.px-pacman.px, dy=g.py-pacman.py;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<CELL*0.75){
+      if(g.scared&&!g.eaten){
+        g.eaten=true;g.scared=false;
+        eatCombo++;
+        const bonus=[200,400,800,1600][Math.min(eatCombo-1,3)];
+        score+=bonus; updateHUD();
+      } else if(!g.eaten&&!g.scared&&state==='playing'){
+        loseLife();
+      }
+    }
+  });
+}
+
+function loseLife(){
+  lives--; updateHUD();
+  state='dying'; dyingFrame=0;
+}
+
+// ════════ 主绘制 ════════
+function draw(){
+  // 背景
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+
+  // 地图
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const v=map[r][c];
+      if(v===1) drawWall(c,r);
+      else if(v===2) drawDot(c,r);
+      else if(v===3) drawPower(c,r);
+    }
+  }
+
+  // 幽灵
+  ghosts.forEach(g=>drawGhost(g));
+
+  // 吃豆人
+  if(state!=='dying'||dyingFrame<20) drawPacman();
+  else if(state==='dying'){
+    // 死亡动画：缩圈
+    const prog=(dyingFrame-20)/40;
+    const r=CELL*0.44*(1-Math.min(prog,1));
+    if(r>0){
+      ctx.fillStyle='#ffe000';
+      ctx.beginPath();ctx.arc(pacman.px,pacman.py,r,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  // 扫光特效（过关）
+  if(state==='win'){
+    flashFrame++;
+    const alpha=Math.abs(Math.sin(flashFrame*0.15))*0.35;
+    ctx.fillStyle=`rgba(255,255,100,${alpha})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+// ════════ 主循环 ════════
+let lastTime=0, raf;
+function loop(ts=0){
+  const dt=Math.min(ts-lastTime,50); lastTime=ts;
+
+  if(state==='playing'){
+    if(powerTimer>0) powerTimer--;
+    else ghosts.forEach(g=>{if(!g.eaten)g.scared=false;});
+
+    movePacman();
+    ghosts.forEach(moveGhost);
+    eatDot();
+    checkCollision();
+
+    if(totalDots<=0){
+      state='win'; flashFrame=0;
+      setTimeout(()=>{
+        level++; initLevel(); state='playing'; updateHUD();
+      },2000);
+    }
+  }
+
+  if(state==='dying'){
+    dyingFrame++;
+    if(dyingFrame>60){
+      if(lives<=0){ state='gameover'; showOverlay('GAME OVER','INSERT COIN'); }
+      else{ initLevel(); state='playing'; }
+    }
+  }
+
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+
+function showOverlay(title,btn){
+  const ov=document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  ov.querySelector('.ov-title').textContent=title;
+  ov.querySelector('.ov-score').textContent=`SCORE  ${score}`;
+  ov.querySelector('#ov-btn').textContent=btn;
+}
+
+// ════════ 输入 ════════
+document.addEventListener('keydown',e=>{
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','a','s','d','W','A','S','D'].includes(e.key))e.preventDefault();
+  if(state==='playing'||state==='dying'){
+    if(e.key==='ArrowUp'||e.key==='w'||e.key==='W') nextDir={x:0,y:-1};
+    if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') nextDir={x:0,y:1};
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') nextDir={x:-1,y:0};
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') nextDir={x:1,y:0};
+  }
+});
+
+document.querySelectorAll('#dpad button').forEach(btn=>{
+  const setDir=()=>{
+    const d=btn.dataset.dir;
+    if(d==='up') nextDir={x:0,y:-1};
+    if(d==='down') nextDir={x:0,y:1};
+    if(d==='left') nextDir={x:-1,y:0};
+    if(d==='right') nextDir={x:1,y:0};
+  };
+  btn.addEventListener('touchstart',e=>{e.preventDefault();setDir();},{passive:false});
+  btn.addEventListener('mousedown',setDir);
+});
+
+document.getElementById('ov-btn').addEventListener('click',()=>{
+  if(raf) cancelAnimationFrame(raf);
+  startGame();
+});
+
+// 触摸滑动
+let touchX,touchY;
+canvas.addEventListener('touchstart',e=>{const t=e.touches[0];touchX=t.clientX;touchY=t.clientY;},{passive:true});
+canvas.addEventListener('touchend',e=>{
+  const t=e.changedTouches[0];
+  const dx=t.clientX-touchX,dy=t.clientY-touchY;
+  if(Math.abs(dx)>Math.abs(dy))nextDir={x:dx>0?1:-1,y:0};
+  else nextDir={x:0,y:dy>0?1:-1};
+},{passive:true});
+
+// 初始
+state='title';
+document.getElementById('overlay').querySelector('.ov-score').textContent='';
+</script>
+</body>
+</html>

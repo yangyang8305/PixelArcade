@@ -244,6 +244,15 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   overflow: hidden;
 }
+/* 真实缩略图盖在渐变+emoji 之上；加载失败时被移除，露出 emoji 兜底 */
+.game-thumb-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  transition: transform .3s ease;
+}
+.game-card:hover .game-thumb-img { transform: scale(1.06); }
 .game-thumb-placeholder::before {
   content: '';
   position: absolute; inset: 0;
@@ -355,7 +364,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ══ RESPONSIVE ══ */
 @media (max-width: 768px) {
-  .nav-center { display: none; }
+  .navbar { gap: 10px; padding: 0 14px; }
+  .nav-center { max-width: none; }
+  .nav-right { gap: 12px; }
+  .nav-link { display: none; }  /* Home 链接收起，logo 本身就是首页入口 */
   .nav-logo .logo-text { font-size: 11px; }
 }
 @media (max-width: 480px) {

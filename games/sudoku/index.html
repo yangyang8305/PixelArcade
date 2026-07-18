@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>数独</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0f4ff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;padding:16px}
+h1{font-size:1.8rem;color:#333;margin-bottom:8px;letter-spacing:2px}
+.controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.controls button{padding:7px 16px;border:none;border-radius:6px;background:#4a90d9;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer}
+.controls button:hover{background:#357abd}
+.controls button.danger{background:#e94560}
+#grid{display:grid;grid-template-columns:repeat(9,44px);grid-template-rows:repeat(9,44px);border:3px solid #333;gap:0;background:#fff}
+.cell{width:44px;height:44px;border:1px solid #bbb;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;cursor:pointer;color:#333;transition:background .1s}
+.cell.given{color:#333;background:#e8edf5;cursor:default}
+.cell.selected{background:#bbdefb !important}
+.cell.highlight{background:#e3f2fd}
+.cell.error{color:#e94560}
+.cell.user{color:#1565c0}
+.cell:nth-child(3n):not(:nth-child(9n)){border-right:3px solid #333}
+.row-3 .cell,.row-6 .cell{border-bottom:3px solid #333}
+#numpad{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+#numpad button{width:40px;height:40px;border:none;border-radius:6px;background:#4a90d9;color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer}
+#numpad button:hover{background:#357abd}
+#numpad button.erase{background:#e94560}
+.info{margin-top:8px;font-size:.8rem;color:#888}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#fff;font-size:2rem;margin-bottom:16px}
+#overlay button{background:#4a90d9;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin:4px}
+</style>
+</head>
+<body>
+<h1>🔢 数独</h1>
+<div class="controls">
+  <button onclick="generate('easy')">初级</button>
+  <button onclick="generate('medium')">中级</button>
+  <button onclick="generate('hard')">困难</button>
+  <button onclick="checkBoard()" style="background:#2ecc71">检查</button>
+  <button onclick="solve()" class="danger">提示解</button>
+</div>
+<div id="grid"></div>
+<div id="numpad">
+  <button onclick="input(1)">1</button><button onclick="input(2)">2</button>
+  <button onclick="input(3)">3</button><button onclick="input(4)">4</button>
+  <button onclick="input(5)">5</button><button onclick="input(6)">6</button>
+  <button onclick="input(7)">7</button><button onclick="input(8)">8</button>
+  <button onclick="input(9)">9</button><button onclick="input(0)" class="erase">删除</button>
+</div>
+<p class="info">点击格子选中，再点数字填入</p>
+<div id="overlay" style="display:none">
+  <h2 id="ov-msg">成功！</h2>
+  <button onclick="generate('easy')">继续玩初级</button>
+  <button onclick="document.getElementById('overlay').style.display='none'">关闭</button>
+</div>
+<script>
+var solution,puzzle,userBoard,selected=null;
+var BLANKS={easy:35,medium:45,hard:55};
+function generate(diff){
+  var base=solvedBoard();
+  solution=base.map(function(r){return r.slice();});
+  puzzle=base.map(function(r){return r.slice();});
+  var blanks=BLANKS[diff]||35;
+  var cells=[];
+  for(var i=0;i<81;i++)cells.push(i);
+  shuffle(cells);
+  for(var i=0;i<blanks;i++){var r=cells[i]/9|0,c=cells[i]%9;puzzle[r][c]=0;}
+  userBoard=puzzle.map(function(r){return r.slice();});
+  selected=null;render();
+}
+function solvedBoard(){
+  var b=Array.from({length:9},function(){return Array(9).fill(0);});
+  fillBoard(b);
+  return b;
+}
+function fillBoard(b){
+  for(var i=0;i<81;i++){
+    var r=i/9|0,c=i%9;
+    if(b[r][c]!==0)continue;
+    var nums=[1,2,3,4,5,6,7,8,9];shuffle(nums);
+    for(var j=0;j<nums.length;j++){
+      if(valid(b,r,c,nums[j])){b[r][c]=nums[j];if(fillBoard(b))return true;b[r][c]=0;}
+    }
+    return false;
+  }
+  return true;
+}
+function valid(b,r,c,n){
+  for(var i=0;i<9;i++){if(b[r][i]===n||b[i][c]===n)return false;}
+  var br=r-r%3,bc=c-c%3;
+  for(var dr=0;dr<3;dr++)for(var dc=0;dc<3;dc++)if(b[br+dr][bc+dc]===n)return false;
+  return true;
+}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.random()*(i+1)|0;var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function render(){
+  var g=document.getElementById('grid');
+  g.innerHTML='';
+  for(var r=0;r<9;r++){
+    for(var c=0;c<9;c++){
+      var cell=document.createElement('div');
+      cell.className='cell';
+      if(r===2||r===5)cell.style.borderBottom='3px solid #333';
+      var isGiven=puzzle[r][c]!==0;
+      if(isGiven)cell.classList.add('given');
+      if(selected&&selected[0]===r&&selected[1]===c)cell.classList.add('selected');
+      else if(selected&&(selected[0]===r||selected[1]===c||(r-(r%3)===selected[0]-selected[0]%3&&c-(c%3)===selected[1]-selected[1]%3)))cell.classList.add('highlight');
+      var v=userBoard[r][c];
+      if(v!==0){
+        cell.textContent=v;
+        if(!isGiven)cell.classList.add('user');
+        if(!isGiven&&v!==solution[r][c])cell.classList.add('error');
+      }
+      (function(r,c){cell.addEventListener('click',function(){if(!puzzle[r][c])selected=[r,c];else selected=[r,c];render();});  })(r,c);
+      g.appendChild(cell);
+    }
+  }
+}
+function input(n){
+  if(!selected)return;
+  var r=selected[0],c=selected[1];
+  if(puzzle[r][c])return;
+  userBoard[r][c]=n;
+  render();
+  if(checkWin())showWin();
+}
+function checkWin(){
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(userBoard[r][c]!==solution[r][c])return false;
+  return true;
+}
+function checkBoard(){
+  var errors=0;
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(userBoard[r][c]&&userBoard[r][c]!==solution[r][c])errors++;
+  alert(errors?'有 '+errors+' 个错误，继续加油！':'没有错误，很棒！');
+}
+function solve(){
+  userBoard=solution.map(function(r){return r.slice();});render();
+}
+function showWin(){
+  document.getElementById('ov-msg').textContent='🎉 数独完成！';
+  document.getElementById('overlay').style.display='flex';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key>='1'&&e.key<='9')input(+e.key);
+  if(e.key==='Backspace'||e.key==='Delete'||e.key==='0')input(0);
+  if(!selected)return;
+  var r=selected[0],c=selected[1];
+  if(e.key==='ArrowUp'&&r>0)selected=[r-1,c];
+  if(e.key==='ArrowDown'&&r<8)selected=[r+1,c];
+  if(e.key==='ArrowLeft'&&c>0)selected=[r,c-1];
+  if(e.key==='ArrowRight'&&c<8)selected=[r,c+1];
+  render();
+});
+generate('easy');
+</script>
+</body>
+</html>

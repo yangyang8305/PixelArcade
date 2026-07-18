@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+# 绑定自定义域名后，把下面的地址换成 https://你的域名/sitemap.xml
+Sitemap: https://yangyang8305.github.io/PixelArcade/sitemap.xml

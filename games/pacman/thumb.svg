@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='#1a1a2e'/><rect x='10' y='10' width='280' height='160' rx='4' fill='#000'/>
+<rect x='24' y='24' width='110' height='8' rx='4' fill='none' stroke='#2121de' stroke-width='3'/>
+<rect x='166' y='24' width='110' height='8' rx='4' fill='none' stroke='#2121de' stroke-width='3'/>
+<rect x='24' y='148' width='110' height='8' rx='4' fill='none' stroke='#2121de' stroke-width='3'/>
+<rect x='166' y='148' width='110' height='8' rx='4' fill='none' stroke='#2121de' stroke-width='3'/>
+<circle cx='60' cy='90' r='4' fill='#ffb897'/><circle cx='90' cy='90' r='4' fill='#ffb897'/><circle cx='120' cy='90' r='4' fill='#ffb897'/><circle cx='250' cy='90' r='7' fill='#ffb897'/>
+<path d='M170 90 L196 76 A30 30 0 1 1 196 104 Z' fill='#ffe600' transform='rotate(180 183 90)'/>
+<g><path d='M212 104 v-14 a14 14 0 0 1 28 0 v14 l-7 -6 -7 6 -7 -6 Z' fill='#ff0000'/><circle cx='219' cy='88' r='4' fill='#fff'/><circle cx='233' cy='88' r='4' fill='#fff'/><circle cx='220' cy='89' r='2' fill='#2121de'/><circle cx='234' cy='89' r='2' fill='#2121de'/></g>
+<text x='150' y='190' font-family='monospace' font-size='11' fill='#ffe600' text-anchor='middle'>PAC-MAN</text></svg>

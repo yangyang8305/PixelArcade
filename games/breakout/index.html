@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>打砖块</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;color:#eee}
+h1{font-size:1.8rem;color:#00d4ff;margin-bottom:8px;letter-spacing:2px}
+.info{display:flex;gap:24px;margin-bottom:12px;font-size:.9rem}
+.info span{background:#16213e;padding:5px 16px;border-radius:20px}
+.info b{color:#00d4ff}
+canvas{border:2px solid #00d4ff;border-radius:4px;background:#0a0a1a;display:block}
+.hint{margin-top:10px;font-size:.78rem;color:#666;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#00d4ff;font-size:2rem;margin-bottom:10px}
+#overlay p{color:#aaa;margin-bottom:20px;text-align:center}
+#overlay button{background:#00d4ff;color:#0d0d1a;border:none;padding:12px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>🧱 打砖块</h1>
+<div class="info">
+  <span>分数 <b id="score">0</b></span>
+  <span>最高 <b id="best">0</b></span>
+  <span>生命 <b id="lives">3</b></span>
+</div>
+<canvas id="c" width="480" height="360"></canvas>
+<p class="hint">鼠标/触摸左右移动挡板 | 空格键暂停</p>
+<div id="overlay">
+  <h2>🧱 打砖块</h2>
+  <p>用挡板弹小球打碎所有砖块<br>小心别让球落地！</p>
+  <button onclick="startGame()">开始游戏</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var W=480,H=360;
+var ROWS=5,COLS=10,BW=40,BH=16,BPAD=4;
+var bx,by,bdx,bdy,px,pw=80,ph=10,py=H-30;
+var bricks,score,best,lives,running,paused,raf;
+best=+localStorage.getItem('breakoutBest')||0;
+document.getElementById('best').textContent=best;
+var COLORS=['#e94560','#f7c948','#4ecdc4','#a29bfe','#55efc4'];
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  score=0;lives=3;px=W/2-pw/2;
+  document.getElementById('score').textContent=0;
+  document.getElementById('lives').textContent=3;
+  resetBall();
+  makeBricks();
+  running=true;paused=false;
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+function resetBall(){bx=W/2;by=H-60;bdx=3*(Math.random()<.5?1:-1);bdy=-3;}
+function makeBricks(){
+  bricks=[];
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)
+    bricks.push({x:c*(BW+BPAD)+24,y:r*(BH+BPAD)+40,alive:true,color:COLORS[r%COLORS.length]});
+}
+function loop(){
+  if(!running){return;}
+  if(!paused)update();
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+function update(){
+  bx+=bdx;by+=bdy;
+  // walls
+  if(bx<6||bx>W-6)bdx*=-1;
+  if(by<6)bdy*=-1;
+  // paddle
+  if(by>py-6&&by<py+ph&&bx>px&&bx<px+pw){
+    bdy=-Math.abs(bdy);
+    bdx+=((bx-(px+pw/2))/(pw/2))*2;
+    bdx=Math.max(-5,Math.min(5,bdx));
+  }
+  // floor
+  if(by>H+10){
+    lives--;document.getElementById('lives').textContent=lives;
+    if(lives<=0){endGame(false);return;}
+    resetBall();
+  }
+  // bricks
+  var allDead=true;
+  for(var i=0;i<bricks.length;i++){
+    var b=bricks[i];if(!b.alive)continue;
+    allDead=false;
+    if(bx>b.x&&bx<b.x+BW&&by>b.y&&by<b.y+BH){
+      b.alive=false;bdy*=-1;
+      score+=10;document.getElementById('score').textContent=score;
+      if(score>best){best=score;localStorage.setItem('breakoutBest',best);document.getElementById('best').textContent=best;}
+    }
+  }
+  if(allDead)endGame(true);
+}
+function draw(){
+  ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,W,H);
+  // bricks
+  for(var i=0;i<bricks.length;i++){
+    var b=bricks[i];if(!b.alive)continue;
+    ctx.fillStyle=b.color;
+    ctx.beginPath();ctx.roundRect(b.x,b.y,BW,BH,3);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.2)';
+    ctx.fillRect(b.x,b.y,BW,4);
+  }
+  // paddle
+  var g=ctx.createLinearGradient(px,py,px+pw,py);
+  g.addColorStop(0,'#00d4ff');g.addColorStop(1,'#0066ff');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.roundRect(px,py,pw,ph,5);ctx.fill();
+  // ball
+  var bg=ctx.createRadialGradient(bx-2,by-2,1,bx,by,6);
+  bg.addColorStop(0,'#fff');bg.addColorStop(1,'#00d4ff');
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.arc(bx,by,6,0,Math.PI*2);ctx.fill();
+}
+function endGame(win){
+  running=false;
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>'+(win?'🎉 胜利！':'游戏结束')+'</h2><p>得分：'+score+'　最高：'+best+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+// mouse
+C.addEventListener('mousemove',function(e){
+  var r=C.getBoundingClientRect();
+  px=e.clientX-r.left-pw/2;
+  px=Math.max(0,Math.min(W-pw,px));
+});
+// touch
+C.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  var r=C.getBoundingClientRect();
+  px=e.touches[0].clientX-r.left-pw/2;
+  px=Math.max(0,Math.min(W-pw,px));
+},{passive:false});
+// pause
+document.addEventListener('keydown',function(e){
+  if(e.key===' '){e.preventDefault();paused=!paused;}
+});
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+    this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
+  };
+}
+</script>
+</body>
+</html>

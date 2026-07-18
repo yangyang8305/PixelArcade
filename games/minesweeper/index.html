@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>扫雷</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#c0c0c0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;padding:16px}
+h1{font-size:1.6rem;margin-bottom:8px;color:#333;letter-spacing:2px}
+.controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.controls button{padding:6px 14px;border:2px outset #fff;background:#c0c0c0;cursor:pointer;font-size:.85rem;font-weight:700}
+.controls button:active,.controls button.active{border-style:inset}
+.top-bar{display:flex;align-items:center;justify-content:space-between;background:#c0c0c0;border:3px inset #fff;padding:6px 12px;margin-bottom:6px;gap:20px;width:100%;max-width:600px}
+.led{background:#000;color:#f00;font-size:1.4rem;font-weight:700;font-family:'Courier New';padding:2px 8px;min-width:60px;text-align:center;letter-spacing:2px}
+.face-btn{font-size:1.4rem;border:2px outset #fff;background:#c0c0c0;cursor:pointer;padding:2px 8px;}
+.face-btn:active{border-style:inset}
+#board{display:inline-grid;border:3px inset #fff;gap:0;background:#c0c0c0}
+.cell{width:28px;height:28px;border:2px outset #fff;background:#c0c0c0;font-size:.85rem;font-weight:700;font-family:'Courier New';display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.cell.open{border:1px solid #999;background:#c0c0c0;cursor:default}
+.cell.flag{color:#f00}
+.cell.mine{background:#f00}
+.n1{color:#00f}.n2{color:#080}.n3{color:#f00}.n4{color:#000080}.n5{color:#800}.n6{color:#008080}.n7{color:#000}.n8{color:#888}
+.hint{margin-top:10px;font-size:.75rem;color:#666;text-align:center}
+</style>
+</head>
+<body>
+<h1>💣 扫雷</h1>
+<div class="controls">
+  <button onclick="setDiff(9,9,10)" id="b-easy">初级</button>
+  <button onclick="setDiff(16,16,40)" id="b-med">中级</button>
+  <button onclick="setDiff(16,30,99)" id="b-hard">困难</button>
+</div>
+<div class="top-bar">
+  <div class="led" id="mines-left">010</div>
+  <button class="face-btn" id="face" onclick="newGame()">😀</button>
+  <div class="led" id="timer">000</div>
+</div>
+<div id="board"></div>
+<p class="hint">左键揭开 | 右键插旗 | 长按手机插旗</p>
+<script>
+var ROWS=9,COLS=9,MINES=10;
+var board,revealed,flagged,minePos,gameOver,started,timerInt,elapsed;
+function setDiff(r,c,m){
+  ROWS=r;COLS=c;MINES=m;
+  document.querySelectorAll('.controls button').forEach(function(b){b.classList.remove('active');});
+  var map={10:'b-easy',40:'b-med',99:'b-hard'};
+  if(map[m])document.getElementById(map[m]).classList.add('active');
+  newGame();
+}
+function newGame(){
+  clearInterval(timerInt);elapsed=0;started=false;gameOver=false;
+  document.getElementById('timer').textContent='000';
+  document.getElementById('face').textContent='😀';
+  board=Array.from({length:ROWS},function(){return Array(COLS).fill(0);});
+  revealed=Array.from({length:ROWS},function(){return Array(COLS).fill(false);});
+  flagged=Array.from({length:ROWS},function(){return Array(COLS).fill(false);});
+  minePos=new Set();
+  document.getElementById('mines-left').textContent=String(MINES).padStart(3,'0');
+  render();
+}
+function plantMines(sr,sc){
+  while(minePos.size<MINES){
+    var r=Math.random()*ROWS|0,c=Math.random()*COLS|0;
+    if(Math.abs(r-sr)<=1&&Math.abs(c-sc)<=1)continue;
+    minePos.add(r+','+c);
+  }
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    if(minePos.has(r+','+c)){board[r][c]=-1;continue;}
+    var cnt=0;
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+      var nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&minePos.has(nr+','+nc))cnt++;
+    }
+    board[r][c]=cnt;
+  }
+}
+function startTimer(){
+  started=true;
+  timerInt=setInterval(function(){
+    elapsed++;
+    document.getElementById('timer').textContent=String(Math.min(elapsed,999)).padStart(3,'0');
+  },1000);
+}
+function reveal(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS||revealed[r][c]||flagged[r][c])return;
+  revealed[r][c]=true;
+  if(board[r][c]===0)for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++)reveal(r+dr,c+dc);
+}
+function click(r,c){
+  if(gameOver||flagged[r][c]||revealed[r][c])return;
+  if(!started){plantMines(r,c);startTimer();}
+  if(board[r][c]===-1){gameOver=true;clearInterval(timerInt);showMines(r,c);document.getElementById('face').textContent='😵';render();return;}
+  reveal(r,c);
+  checkWin();
+  render();
+}
+function flag(r,c){
+  if(gameOver||revealed[r][c])return;
+  flagged[r][c]=!flagged[r][c];
+  var left=MINES-flagged.flat().filter(Boolean).length;
+  document.getElementById('mines-left').textContent=String(Math.max(-99,left)).padStart(3,'0');
+  render();
+}
+function showMines(br,bc){
+  minePos.forEach(function(k){
+    var p=k.split(',');var r=+p[0],c=+p[1];
+    if(!flagged[r][c])revealed[r][c]=true;
+  });
+}
+function checkWin(){
+  var safe=ROWS*COLS-MINES;
+  var revealedSafe=0;
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(revealed[r][c]&&board[r][c]!==-1)revealedSafe++;
+  if(revealedSafe===safe){gameOver=true;clearInterval(timerInt);document.getElementById('face').textContent='😎';alert('🎉 扫雷成功！用时：'+elapsed+'秒');}
+}
+var longPress;
+function render(){
+  var bd=document.getElementById('board');
+  bd.style.gridTemplateColumns='repeat('+COLS+',28px)';
+  bd.innerHTML='';
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    var cell=document.createElement('div');
+    cell.className='cell';
+    (function(r,c){
+      cell.addEventListener('click',function(){click(r,c);});
+      cell.addEventListener('contextmenu',function(e){e.preventDefault();flag(r,c);});
+      cell.addEventListener('touchstart',function(e){var me=e;longPress=setTimeout(function(){flag(r,c);render();},400);},{passive:true});
+      cell.addEventListener('touchend',function(){clearTimeout(longPress);},{passive:true});
+    })(r,c);
+    if(revealed[r][c]){
+      cell.classList.add('open');
+      if(board[r][c]===-1){cell.classList.add('mine');cell.textContent='💣';}
+      else if(board[r][c]>0){cell.textContent=board[r][c];cell.classList.add('n'+board[r][c]);}
+    } else if(flagged[r][c]){
+      cell.classList.add('flag');cell.textContent='🚩';
+    }
+    bd.appendChild(cell);
+  }
+}
+document.getElementById('b-easy').classList.add('active');
+newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>太空侵略者</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#0f0;padding:16px}
+h1{font-size:1.6rem;margin-bottom:6px;letter-spacing:3px;color:#0f0;text-shadow:0 0 10px #0f0}
+.info{display:flex;gap:24px;margin-bottom:10px;font-size:.85rem}
+.info span{color:#0f0}
+.info b{color:#fff;font-size:1rem}
+canvas{display:block;border:1px solid #0f0;box-shadow:0 0 20px rgba(0,255,0,0.2)}
+.ctrl-row{display:flex;gap:8px;margin-top:10px;justify-content:center}
+button.cb{width:52px;height:52px;background:#001100;border:1px solid #0f0;color:#0f0;border-radius:6px;font-size:1.3rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.cb:active{background:#003300}
+.hint{margin-top:8px;font-size:.72rem;color:#0a0;text-align:center}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+#overlay h2{color:#0f0;font-size:2rem;margin-bottom:10px;text-shadow:0 0 10px #0f0;letter-spacing:2px}
+#overlay p{color:#afa;margin-bottom:20px;text-align:center;font-size:.9rem}
+#overlay button{background:#001100;color:#0f0;border:2px solid #0f0;padding:12px 36px;border-radius:4px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:2px}
+</style>
+</head>
+<body>
+<h1>👾 太空侵略者</h1>
+<div class="info">
+  <span>得分 <b id="score">0</b></span>
+  <span>最高 <b id="best">0</b></span>
+  <span>生命 <b id="lives">♥♥♥</b></span>
+  <span>波段 <b id="wave">1</b></span>
+</div>
+<canvas id="c" width="480" height="360"></canvas>
+<div class="ctrl-row">
+  <button class="cb" id="bl">←</button>
+  <button class="cb" id="bs">🔫</button>
+  <button class="cb" id="br">→</button>
+</div>
+<p class="hint">方向键移动 | 空格键射击 | 手机按钮控制</p>
+<div id="overlay">
+  <h2>👾 太空侵略者</h2>
+  <p>消灭所有外星人获胜！<br>外星人越靠近，已山之势越高分。</p>
+  <button onclick="startGame()">开始入侵</button>
+</div>
+<script>
+var C=document.getElementById('c'),ctx=C.getContext('2d');
+var W=480,H=360;
+var ALIEN_ROWS=4,ALIEN_COLS=10,AW=32,AH=24,GAPX=8,GAPY=8;
+var player,bullets,alienBullets,aliens,score,best,lives,wave,alive,raf,alienDir,alienSpeed,alienTimer,shootTimer;
+best=+localStorage.getItem('siBest')||0;
+document.getElementById('best').textContent=best;
+var keys={};
+document.addEventListener('keydown',function(e){keys[e.key]=true;if(e.key===' ')e.preventDefault();});
+document.addEventListener('keyup',function(e){keys[e.key]=false;});
+// touch buttons
+document.getElementById('bl').addEventListener('touchstart',function(){keys['ArrowLeft']=true;},{passive:true});
+document.getElementById('bl').addEventListener('touchend',function(){keys['ArrowLeft']=false;},{passive:true});
+document.getElementById('br').addEventListener('touchstart',function(){keys['ArrowRight']=true;},{passive:true});
+document.getElementById('br').addEventListener('touchend',function(){keys['ArrowRight']=false;},{passive:true});
+document.getElementById('bs').addEventListener('touchstart',function(){keys[' ']=true;},{passive:true});
+document.getElementById('bs').addEventListener('touchend',function(){keys[' ']=false;},{passive:true});
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  score=0;lives=3;wave=1;alive=true;
+  document.getElementById('score').textContent=0;
+  document.getElementById('lives').textContent='♥♥♥';
+  document.getElementById('wave').textContent=1;
+  spawnWave();
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+function spawnWave(){
+  player={x:W/2,y:H-30,w:36,h:16,cooldown:0};
+  bullets=[];alienBullets=[];
+  alienDir=1;alienSpeed=0.6+wave*0.15;
+  alienTimer=0;shootTimer=0;
+  aliens=[];
+  var startX=20,startY=40;
+  for(var r=0;r<ALIEN_ROWS;r++)for(var c=0;c<ALIEN_COLS;c++){
+    aliens.push({x:startX+c*(AW+GAPX),y:startY+r*(AH+GAPY),alive:true,row:r});
+  }
+}
+var bulletCooldown=0;
+function loop(){
+  update();draw();
+  raf=requestAnimationFrame(loop);
+}
+function update(){
+  if(!alive)return;
+  // player
+  if((keys['ArrowLeft']||keys['a']||keys['A'])&&player.x>0)player.x-=5;
+  if((keys['ArrowRight']||keys['d']||keys['D'])&&player.x<W-player.w)player.x+=5;
+  bulletCooldown--;
+  if((keys[' ']||keys['z']||keys['Z'])&&bulletCooldown<=0){
+    bullets.push({x:player.x+player.w/2,y:player.y});
+    bulletCooldown=15;
+  }
+  // bullets
+  bullets=bullets.filter(function(b){b.y-=8;return b.y>0;});
+  alienBullets=alienBullets.filter(function(b){b.y+=4;return b.y<H;});
+  // alien movement
+  alienTimer++;
+  var moveInterval=Math.max(5,30-wave*3);
+  if(alienTimer>=moveInterval){
+    alienTimer=0;
+    var aliveAliens=aliens.filter(function(a){return a.alive;});
+    var hitWall=aliveAliens.some(function(a){return (a.x<=0&&alienDir<0)||(a.x+AW>=W&&alienDir>0);});
+    if(hitWall){aliens.forEach(function(a){a.y+=12;});alienDir*=-1;}
+    else aliens.forEach(function(a){a.x+=alienDir*alienSpeed*moveInterval;});
+    // alien shoot
+    if(aliveAliens.length&&Math.random()<0.08){
+      var shooter=aliveAliens[Math.random()*aliveAliens.length|0];
+      alienBullets.push({x:shooter.x+AW/2,y:shooter.y+AH});
+    }
+    // alien reached bottom
+    if(aliveAliens.some(function(a){return a.y+AH>=player.y;})){
+      endGame(false);return;
+    }
+  }
+  // bullet vs alien
+  bullets.forEach(function(b){
+    aliens.forEach(function(a){
+      if(a.alive&&b.x>a.x&&b.x<a.x+AW&&b.y>a.y&&b.y<a.y+AH){
+        a.alive=false;b.y=-999;
+        var pts=(ALIEN_ROWS-a.row)*10;
+        score+=pts;
+        if(score>best){best=score;localStorage.setItem('siBest',best);document.getElementById('best').textContent=best;}
+        document.getElementById('score').textContent=score;
+      }
+    });
+  });
+  // alien bullet vs player
+  alienBullets.forEach(function(b){
+    if(b.x>player.x&&b.x<player.x+player.w&&b.y>player.y&&b.y<player.y+player.h){
+      b.y=-999;lives--;
+      var ls=lives>0?'♥'.repeat(lives):'♥♡♡';
+      document.getElementById('lives').textContent=lives>=3?'♥♥♥':lives===2?'♥♥♡':lives===1?'♥♡♡':'♡♡♡';
+      if(lives<=0){endGame(false);return;}
+    }
+  });
+  // wave clear
+  if(aliens.every(function(a){return !a.alive;})){
+    wave++;document.getElementById('wave').textContent=wave;
+    spawnWave();
+  }
+}
+var ALIEN_SHAPES=[
+  // row 0: UFO style
+  function(x,y,c){
+    c.fillStyle='#f00';
+    c.fillRect(x+8,y,AW-16,AH*0.4);
+    c.fillRect(x+4,y+AH*0.3,AW-8,AH*0.6);
+    c.fillStyle='#ff6';
+    c.fillRect(x+6,y+AH*0.5,4,4);c.fillRect(x+AW-10,y+AH*0.5,4,4);
+  },
+  // row 1-2: crab style
+  function(x,y,c){
+    c.fillStyle='#0f0';
+    c.fillRect(x+2,y+4,4,AH-8);c.fillRect(x+AW-6,y+4,4,AH-8);
+    c.fillRect(x+6,y+2,AW-12,AH-4);
+    c.fillStyle='#0a0';
+    c.fillRect(x+8,y+6,4,6);c.fillRect(x+AW-12,y+6,4,6);
+  },
+  // row 3: squid style
+  function(x,y,c){
+    c.fillStyle='#88f';
+    c.fillRect(x+6,y,AW-12,AH);
+    c.fillRect(x+2,y+6,4,AH-6);c.fillRect(x+AW-6,y+6,4,AH-6);
+    c.fillStyle='#fff';
+    c.fillRect(x+9,y+4,4,4);c.fillRect(x+AW-13,y+4,4,4);
+  }
+];
+function drawAlien(a){
+  if(!a.alive)return;
+  var shapeIdx=a.row===0?0:a.row<=2?1:2;
+  ALIEN_SHAPES[shapeIdx](a.x,a.y,ctx);
+}
+function draw(){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  [[40,20],[120,50],[200,15],[300,40],[400,25],[60,300],[180,280],[350,310],[450,90]].forEach(function(s){
+    ctx.fillRect(s[0],s[1],1,1);
+  });
+  // aliens
+  aliens.forEach(drawAlien);
+  // player
+  ctx.fillStyle='#0f0';
+  ctx.fillRect(player.x+14,player.y-8,8,8);
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle='#0a0';
+  ctx.fillRect(player.x+2,player.y+2,6,player.h-4);
+  ctx.fillRect(player.x+player.w-8,player.y+2,6,player.h-4);
+  // bullets
+  ctx.fillStyle='#fff';
+  bullets.forEach(function(b){ctx.fillRect(b.x-2,b.y,3,10);});
+  ctx.fillStyle='#f80';
+  alienBullets.forEach(function(b){ctx.fillRect(b.x-2,b.y,3,8);});
+  // ground line
+  ctx.fillStyle='#0f0';ctx.fillRect(0,H-14,W,2);
+}
+function endGame(win){
+  alive=false;
+  var ov=document.getElementById('overlay');
+  ov.innerHTML='<h2>'+(win?'🎉 胜利':'💥 阵亡')+'</h2><p>得分：'+score+'　最高：'+best+'　波段：'+wave+'</p><button onclick="startGame()">再来一局</button>';
+  ov.style.display='flex';
+}
+</script>
+</body>
+</html>

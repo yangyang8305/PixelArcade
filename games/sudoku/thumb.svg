@@ -1,0 +1,45 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><rect width='300' height='200' fill='#f0f4ff'/>
+<rect x='20' y='15' width='175' height='175' fill='#fff' stroke='#333' stroke-width='3'/>
+<!-- grid lines thin -->
+<line x1='39' y1='15' x2='39' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='58' y1='15' x2='58' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='77' y1='15' x2='77' y2='190' stroke='#333' stroke-width='2'/>
+<line x1='96' y1='15' x2='96' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='115' y1='15' x2='115' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='134' y1='15' x2='134' y2='190' stroke='#333' stroke-width='2'/>
+<line x1='153' y1='15' x2='153' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='172' y1='15' x2='172' y2='190' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='34' x2='195' y2='34' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='53' x2='195' y2='53' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='73' x2='195' y2='73' stroke='#333' stroke-width='2'/>
+<line x1='20' y1='92' x2='195' y2='92' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='111' x2='195' y2='111' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='131' x2='195' y2='131' stroke='#333' stroke-width='2'/>
+<line x1='20' y1='150' x2='195' y2='150' stroke='#bbb' stroke-width='1'/>
+<line x1='20' y1='169' x2='195' y2='169' stroke='#bbb' stroke-width='1'/>
+<!-- numbers -->
+<text x='29' y='30' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>5</text>
+<text x='48' y='30' font-family='Arial' font-size='13' font-weight='bold' fill='#1565c0'>3</text>
+<text x='87' y='30' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>7</text>
+<text x='29' y='49' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>6</text>
+<text x='106' y='49' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>1</text>
+<text x='125' y='49' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>9</text>
+<text x='144' y='49' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>5</text>
+<text x='48' y='68' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>9</text>
+<text x='67' y='68' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>8</text>
+<text x='163' y='68' font-family='Arial' font-size='13' font-weight='bold' fill='#333'>6</text>
+<!-- selected cell highlight -->
+<rect x='20' y='15' width='19' height='19' fill='#bbdefb' opacity='0.7'/>
+<!-- numpad preview -->
+<rect x='210' y='40' width='75' height='120' rx='6' fill='#fff' stroke='#4a90d9' stroke-width='1.5'/>
+<text x='247' y='32' font-family='Arial' font-size='11' fill='#888' text-anchor='middle'>数字键</text>
+<text x='230' y='65' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>1</text>
+<text x='248' y='65' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>2</text>
+<text x='266' y='65' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>3</text>
+<text x='230' y='88' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>4</text>
+<text x='248' y='88' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>5</text>
+<text x='266' y='88' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>6</text>
+<text x='230' y='111' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>7</text>
+<text x='248' y='111' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>8</text>
+<text x='266' y='111' font-family='Arial' font-size='16' font-weight='bold' fill='#4a90d9' text-anchor='middle'>9</text>
+<text x='150' y='195' font-family='Arial' font-size='14' font-weight='bold' fill='#333' text-anchor='middle'>🔢 数独</text></svg>
