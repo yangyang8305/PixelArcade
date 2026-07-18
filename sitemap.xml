@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- TODO: 上线后把 YOUR-DOMAIN.com 换成你自己的域名 -->
+<!-- 绑定自定义域名后，把 https://yangyang8305.github.io/PixelArcade/ 全局替换成你的域名 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://YOUR-DOMAIN.com/</loc><priority>1.0</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=pacman</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=snake</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=tetris</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=minesweeper</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=sokoban</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=2048</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=sudoku</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=memory</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=flappy</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=doodle</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=stack</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=pong</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=breakout</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=spaceinvaders</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=towerdefense</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=gomoku</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=tictactoe</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/game.html?id=hextris</loc><priority>0.8</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/about.html</loc><priority>0.3</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/privacy.html</loc><priority>0.3</priority></url>
-  <url><loc>https://YOUR-DOMAIN.com/pages/contact.html</loc><priority>0.3</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/</loc><priority>1.0</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=pacman</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=snake</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=tetris</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=minesweeper</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=sokoban</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=2048</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=sudoku</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=memory</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=flappy</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=doodle</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=stack</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=pong</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=breakout</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=spaceinvaders</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=towerdefense</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=gomoku</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=tictactoe</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/game.html?id=hextris</loc><priority>0.8</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/about.html</loc><priority>0.3</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/privacy.html</loc><priority>0.3</priority></url>
+  <url><loc>https://yangyang8305.github.io/PixelArcade/pages/contact.html</loc><priority>0.3</priority></url>
 </urlset>

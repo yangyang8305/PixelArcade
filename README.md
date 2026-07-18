@@ -29,21 +29,31 @@ npx serve .        # or: python3 -m http.server 8000
 
 > Don't open `index.html` via `file://` — the game iframe and localStorage need an HTTP origin.
 
+## Deployment
+
+Deploys to GitHub Pages automatically via `.github/workflows/deploy-pages.yml`
+(runs on every push to `main`). Live at:
+
+**https://yangyang8305.github.io/PixelArcade/**
+
+If the first workflow run fails with a Pages permission error, enable it once by hand:
+repo **Settings → Pages → Source: GitHub Actions**, then re-run the workflow.
+
 ## Launch checklist (monetization)
 
-1. **Deploy** — GitHub Pages / Cloudflare Pages / Netlify (all free, static only).
+1. ~~Deploy~~ — done, see above.
 2. **Custom domain** — AdSense approval is much easier with your own domain than `*.github.io`.
-3. Replace `YOUR-DOMAIN.com` in `sitemap.xml` and `robots.txt`.
-4. Set a real contact email in `pages/contact.html`.
-5. **Apply for Google AdSense** — needs the site live with real content + privacy policy (already included).
-6. After approval: put your `pub-XXXX` ID in `ads.txt` (uncomment the line) and replace the
+   Add it in Settings → Pages → Custom domain, then update `sitemap.xml` + `robots.txt`.
+3. Set a real contact email in `pages/contact.html`.
+4. **Apply for Google AdSense** — needs the site live with real content + privacy policy (already included).
+5. After approval: put your `pub-XXXX` ID in `ads.txt` (uncomment the line) and replace the
    `.ad-placeholder` divs with your AdSense ad units. Slot inventory:
    - Home: top banner, mid banner
    - Game page: top banner, left skyscraper 160×600, below-player 728×90, 2× sidebar 300×250,
      in-game sticky 320×50 (minimizable), bottom sticky 320×50 (closable)
    - ⚠️ AdSense policy: don't overlay ads on interactive game content; the in-game sticky
      slot is best used with a house/affiliate banner, not AdSense units.
-7. Submit `sitemap.xml` in Google Search Console.
+6. Submit `sitemap.xml` in Google Search Console.
 
 ## Adding a game
 
