@@ -31,13 +31,13 @@ npx serve .        # or: python3 -m http.server 8000
 
 ## Deployment
 
-Deploys to GitHub Pages automatically via `.github/workflows/deploy-pages.yml`
-(runs on every push to `main`). Live at:
+GitHub Pages is enabled in branch mode: every push to `main` auto-deploys the
+repo root within a minute or two. Live at:
 
 **https://yangyang8305.github.io/PixelArcade/**
 
-If the first workflow run fails with a Pages permission error, enable it once by hand:
-repo **Settings → Pages → Source: GitHub Actions**, then re-run the workflow.
+`.nojekyll` skips Jekyll processing so the site is served exactly as committed.
+To go live with new changes, just merge them into `main`.
 
 ## Launch checklist (monetization)
 
